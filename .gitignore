@@ -1,0 +1,17 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+coverage/
+.vercel/
+.pytest_cache/
+__pycache__/
+*.pyc
+.venv/
+.downloads/
+
+# Local governance and orchestration artifacts; never publish.
+/AGENTS.md
+/CLAUDE.md
+/SPECIFICATION.md
