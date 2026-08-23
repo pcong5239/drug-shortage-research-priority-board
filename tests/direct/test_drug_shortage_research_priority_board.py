@@ -1217,7 +1217,15 @@ def test_27_root_slot_upgrade_and_upgraders_readback(direct_vm, direct_deploy):
     with direct_vm.expect_revert("Replacement code cannot be empty"):
         contract.upgrade(b"")
 
-    # 3. Successful byte replacement via Root Slot pattern
+    # 3. Reject an unauthorized replacement and preserve Root Slot state
+    original_upgraders = contract.get_upgraders()
+    direct_vm.sender = ALICE
+    with direct_vm.expect_revert("Caller is not authorized to upgrade"):
+        contract.upgrade(b"# unauthorized replacement must not persist")
+    assert contract.get_upgraders() == original_upgraders
+
+    # 4. The authorized upgrader can still replace code after the rejected call
+    direct_vm.sender = DEPLOYER
     # Note: Full bytecode replacement validation is VERIFY-AT-STUDIO
     new_bytecode = b"# VERIFY-AT-STUDIO: upgraded contract mock bytecode"
     contract.upgrade(new_bytecode)

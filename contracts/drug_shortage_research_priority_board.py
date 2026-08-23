@@ -483,6 +483,8 @@ class DrugShortageResearchPriorityBoard(gl.Contract):
 
     def __init__(self):
         self.next_round_id = u256(1)
+        # VERIFY-AT-STUDIO: confirm the deployed Root Slot records the locked
+        # Studio deployer as its sole upgrader on the reviewed Studionet build.
         root = gl.storage.Root.get()
         root.upgraders.get().append(Address(str(gl.message.sender_address)))
 
@@ -1058,7 +1060,13 @@ class DrugShortageResearchPriorityBoard(gl.Contract):
     def upgrade(self, new_code: bytes) -> None:
         if not new_code or len(new_code) == 0:
             raise gl.vm.UserError("Replacement code cannot be empty")
+        # VERIFY-AT-STUDIO: rehearse authorized replacement on an isolated
+        # deployment and prove unauthorized rollback plus unchanged code/state.
         root = gl.storage.Root.get()
+        sender = str(gl.message.sender_address).lower()
+        allowed = [address.as_hex.lower() for address in root.upgraders.get()]
+        if sender not in allowed:
+            raise gl.vm.UserError("Caller is not authorized to upgrade")
         code = root.code.get()
         code.truncate()
         code.extend(new_code)
