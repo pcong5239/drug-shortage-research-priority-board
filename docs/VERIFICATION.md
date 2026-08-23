@@ -10,7 +10,9 @@
 - Contract: [`0x26C0413ED148085A8187D5dC47CEA06Ea4931A6A`](https://explorer-studio.genlayer.com/address/0x26C0413ED148085A8187D5dC47CEA06Ea4931A6A)
 - Deployment: [`0x4999f6bc8972e695e3c0f241aeea7bd489f867807200b293f1bc1b9bd788e193`](https://explorer-studio.genlayer.com/tx/0x4999f6bc8972e695e3c0f241aeea7bd489f867807200b293f1bc1b9bd788e193) — `FINALIZED`, execution `SUCCESS`, consensus `Accepted`
 - Locked deployer/upgrader: `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`
-- Live web URL: populated after the governed Vercel release
+- Live web: [drug-shortage-research-priority-boa.vercel.app](https://drug-shortage-research-priority-boa.vercel.app)
+- Vercel project: `pcong/drug-shortage-research-priority-board`
+- Production deployment: `dpl_6NgZRRU3teGpnmJT7EDcSeAJqnp1` — `READY`
 
 The final public-release commit may add presentation and evidence files, but the deployed contract file must retain the source hash above.
 
@@ -29,7 +31,7 @@ Studionet `gen_getContractCode` returned 46,881 bytes whose SHA-256 equals the r
 | GenVM lint/validation | `genvm-lint check contracts\drug_shortage_research_priority_board.py` | 3 checks passed; 19 methods validated |
 | GenVM schema | `genvm-lint schema contracts\drug_shortage_research_priority_board.py` | passed |
 | GenVM typecheck | `genvm-lint typecheck contracts\drug_shortage_research_priority_board.py` | no type errors |
-| Frontend suite | `pnpm test -- --run` | 62 passed |
+| Frontend suite | `pnpm test -- --run` | 63 passed |
 | Frontend typecheck | `pnpm run typecheck` | passed |
 | Production build | `pnpm run build` with the contract address | passed |
 
@@ -43,6 +45,6 @@ The governed 43-row Studio ledger covers deployment, recovery, expected rollback
 
 Every positive case required `FINALIZED`, successful execution, accepted consensus where applicable, and authoritative readback. Failed and `Undetermined` diagnostic attempts are retained in the internal evidence ledger but are not counted as passes.
 
-## Remaining release gate
+## Remaining user-owned gate
 
-The exact Vercel URL, compiled production configuration, user-executed external-wallet E2E transactions, and final anonymous review are added only after deployment. Until then, this project is not claimed complete.
+The compiled production configuration and primary-AI live checks are verified before handoff. The user-executed external-wallet E2E transactions and final anonymous review remain mandatory. Until those pass against this exact release, this project is not claimed complete.

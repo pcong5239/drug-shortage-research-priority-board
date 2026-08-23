@@ -28,6 +28,8 @@ Evidence fetch, digest, freshness, schema, or consensus failures become retry-sa
 
 Full transaction and source-parity evidence is in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
+Live app: [drug-shortage-research-priority-boa.vercel.app](https://drug-shortage-research-priority-boa.vercel.app)
+
 ## Wallet support
 
 The frontend discovers MetaMask, OKX Wallet, and Rabby via EIP-6963. Opening the chooser sends no account request; a request is sent only to the exact provider selected by the user. Every full reload starts disconnected.

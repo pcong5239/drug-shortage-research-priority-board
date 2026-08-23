@@ -185,10 +185,14 @@ export const CONTRACT_ABI = [
 
 export function getContractAddress(): string | null {
   const addr = ((import.meta as any).env?.VITE_GENLAYER_CONTRACT_ADDRESS || '').trim();
+  return normalizeContractAddress(addr);
+}
+
+export function normalizeContractAddress(addr: string): string | null {
   if (!addr || !/^0x[0-9a-fA-F]{40}$/.test(addr)) {
     return null;
   }
-  return addr.toLowerCase();
+  return addr;
 }
 
 // -----------------------------------------------------------------------------

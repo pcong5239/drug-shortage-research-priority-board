@@ -7,13 +7,18 @@ import {
   toSafeInteger,
   toSafeBigInt,
 } from '../services/validation';
-import { classifyReceipt, executeContractWrite } from '../services/contract';
+import { classifyReceipt, executeContractWrite, normalizeContractAddress } from '../services/contract';
 import * as clientService from '../services/client';
 
 const encodeReturn = (value: bigint): `0x${string}` =>
   `0x${Array.from(abi.calldata.encode(value), (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
 
 describe('Contract Boundary & Data Parsing (Scenarios 27–38)', () => {
+  it('preserves checksum case required by the Studionet contract lookup', () => {
+    const address = '0x26C0413ED148085A8187D5dC47CEA06Ea4931A6A';
+    expect(normalizeContractAddress(address)).toBe(address);
+  });
+
   // Scenario 27: Malformed JSON view return is handled safely without crashing
   it('Scenario 27: safely rejects malformed JSON with error outcome', () => {
     const malformedJson = '{ "round_id": 1, "title": "Incomplete json...';
