@@ -130,8 +130,10 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
 
     try {
       // 1. Fetch static / high-level metadata
-      const [count, lims, disc, upgs] = await Promise.all([
-        fetchRoundCount(contractAddress),
+      // Load the authoritative round count first so Studionet is not hit with
+      // a burst of concurrent gen_call requests during initial render.
+      const count = await fetchRoundCount(contractAddress);
+      const [lims, disc, upgs] = await Promise.all([
         fetchLimits(contractAddress).catch(() => null),
         fetchContractDisclaimer(contractAddress).catch(() => ''),
         fetchUpgraders(contractAddress).catch(() => []),
