@@ -133,16 +133,8 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       // Load the authoritative round count first so Studionet is not hit with
       // a burst of concurrent gen_call requests during initial render.
       const count = await fetchRoundCount(contractAddress);
-      const [lims, disc, upgs] = await Promise.all([
-        fetchLimits(contractAddress).catch(() => null),
-        fetchContractDisclaimer(contractAddress).catch(() => ''),
-        fetchUpgraders(contractAddress).catch(() => []),
-      ]);
 
       setRoundCount(count);
-      if (lims) setLimits(lims);
-      if (disc) setContractDisclaimer(disc);
-      setUpgraders(upgs);
 
       // Determine active round
       let activeRoundId = selectedRoundId;
@@ -158,7 +150,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
         setCurrentRound(rData);
 
         // 3. Fetch submissions
-        const subCount = await fetchSubmissionCount(contractAddress, activeRoundId).catch(() => 0);
+        const subCount = await fetchSubmissionCount(contractAddress, activeRoundId);
         const subList: SubmissionData[] = [];
         const evalMap: Record<number, EvaluationData> = {};
 
@@ -175,8 +167,10 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
                 // Ignore missing evaluation
               }
             }
-          } catch {
-            // Ignore single submission fetch error
+          } catch (submissionError) {
+            throw new Error(
+              `Failed to load submission #${i}: ${submissionError instanceof Error ? submissionError.message : String(submissionError)}`
+            );
           }
         }
         setSubmissions(subList);
@@ -217,6 +211,14 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
         setAllocations(null);
         setCallerStatus(null);
       }
+
+      // Non-critical metadata loads only after the core round state is complete.
+      const lims = await fetchLimits(contractAddress).catch(() => null);
+      const disc = await fetchContractDisclaimer(contractAddress).catch(() => '');
+      const upgs = await fetchUpgraders(contractAddress).catch(() => []);
+      if (lims) setLimits(lims);
+      if (disc) setContractDisclaimer(disc);
+      setUpgraders(upgs);
     } catch (err: any) {
       setError(`Failed to fetch on-chain state: ${err?.message || String(err)}`);
     } finally {
