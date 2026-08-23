@@ -15,6 +15,9 @@ export const MainWorkbench: React.FC = () => {
     reclaimExpiredSlots,
     finalizeRound,
     isContractConfigured,
+    isLoading,
+    error,
+    refreshData,
     txState,
   } = useContract();
 
@@ -33,6 +36,21 @@ export const MainWorkbench: React.FC = () => {
             The environment variable <code>VITE_GENLAYER_CONTRACT_ADDRESS</code> is not set or empty.
             To connect to an active contract on GenLayer Studionet, specify a valid contract address in your <code>.env</code> file.
           </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error && !currentRound) {
+    return (
+      <main className="main-workbench" role="main">
+        <div className="workbench-banner-state state-error" role="alert">
+          <div className="banner-state-icon" aria-hidden="true">⚠️</div>
+          <h2>Unable to Load Studionet State</h2>
+          <p>{error}</p>
+          <button type="button" className="btn btn-primary" onClick={refreshData} disabled={isLoading}>
+            {isLoading ? 'Retrying…' : 'Retry On-chain Readback'}
+          </button>
         </div>
       </main>
     );

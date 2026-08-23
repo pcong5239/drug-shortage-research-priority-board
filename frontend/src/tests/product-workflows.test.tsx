@@ -100,6 +100,21 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
     expect(await screen.findByText(/No Research Priority Round Selected/i)).toBeInTheDocument();
   });
 
+  it('Scenario 40b: shows an explicit retry when the Studionet readback fails', async () => {
+    vi.spyOn(contractService, 'fetchRoundCount').mockRejectedValue(new Error('RPC unavailable'));
+
+    render(
+      <WalletProvider>
+        <ContractProvider contractAddressOverride="0x1111111111111111111111111111111111111111">
+          <AppContent />
+        </ContractProvider>
+      </WalletProvider>
+    );
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Unable to Load Studionet State/i);
+    expect(screen.getByRole('button', { name: /Retry On-chain Readback/i })).toBeInTheDocument();
+  });
+
   // Scenario 41: Create round modal validation
   it('Scenario 41: validates required fields in Create Round form', async () => {
     const handleClose = vi.fn();
