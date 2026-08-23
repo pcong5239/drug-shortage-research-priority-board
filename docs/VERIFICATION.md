@@ -12,7 +12,6 @@
 - Locked deployer/upgrader: `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`
 - Live web: [drug-shortage-research-priority-boa.vercel.app](https://drug-shortage-research-priority-boa.vercel.app)
 - Vercel project: `pcong/drug-shortage-research-priority-board`
-- Production deployment: `dpl_6NgZRRU3teGpnmJT7EDcSeAJqnp1` — `READY`
 
 The final public-release commit may add presentation and evidence files, but the deployed contract file must retain the source hash above.
 
