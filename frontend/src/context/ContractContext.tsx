@@ -134,7 +134,8 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
     // A write may finish while the mount/account refresh is still running.
     // Wait for that read to finish, then perform the write's authoritative refresh.
     const joinedExistingRefresh = refreshInFlightRef.current;
-    if (joinedExistingRefresh && refreshKeyRef.current !== requestKey) {
+    const supersedesExistingRefresh = joinedExistingRefresh && refreshKeyRef.current !== requestKey;
+    if (supersedesExistingRefresh) {
       refreshAbortRef.current?.abort();
     }
     while (refreshInFlightRef.current) {
@@ -142,7 +143,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
     }
     // React StrictMode and overlapping effects coalesce into the active refresh.
     // Only a post-write reconciliation is allowed to run once more afterward.
-    if (joinedExistingRefresh && !reconcileAfterInFlight) return;
+    if (joinedExistingRefresh && !supersedesExistingRefresh && !reconcileAfterInFlight) return;
 
     const controller = new AbortController();
     refreshAbortRef.current = controller;

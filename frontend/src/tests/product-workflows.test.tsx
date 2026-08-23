@@ -132,6 +132,37 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
     expect(readContract).toHaveBeenCalledTimes(initialCallCount);
   });
 
+  it('aborts a superseded contract refresh and runs exactly one replacement for the new key', async () => {
+    const oldAddress = '0x1111111111111111111111111111111111111111';
+    const newAddress = '0x2222222222222222222222222222222222222222';
+    let releaseOld!: (value: number) => void;
+    const oldPending = new Promise<number>((resolve) => { releaseOld = resolve; });
+    const fetchRoundCount = vi.spyOn(contractService, 'fetchRoundCount').mockImplementation(
+      async (address) => address === oldAddress ? oldPending : 0,
+    );
+
+    const renderTree = (address: string) => (
+      <WalletProvider>
+        <ContractProvider contractAddressOverride={address}>
+          <AppContent />
+        </ContractProvider>
+      </WalletProvider>
+    );
+    const view = render(renderTree(oldAddress));
+    await waitFor(() => {
+      const oldRoundCalls = fetchRoundCount.mock.calls.filter(([address]) => address === oldAddress);
+      expect(oldRoundCalls).toHaveLength(1);
+    });
+    view.rerender(renderTree(newAddress));
+    await waitFor(() => expect(fetchRoundCount.mock.calls[0][1]?.aborted).toBe(true));
+    releaseOld(0);
+
+    expect(await screen.findByText(/No Research Priority Round Selected/i)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(fetchRoundCount.mock.calls.map(([address]) => address)).toEqual([oldAddress, newAddress]);
+    });
+  });
+
   it('Scenario 40b: shows an explicit retry when the Studionet readback fails', async () => {
     vi.spyOn(contractService, 'fetchRoundCount').mockRejectedValue(new Error('RPC unavailable'));
 
