@@ -30,8 +30,12 @@ export const QuestionQueue: React.FC = () => {
   if (submissions.length === 0) {
     return (
       <div className="queue-container">
-        <div className="queue-empty-message">
-          No research questions submitted for Round #{currentRound.round_id} yet.
+        <div className="queue-empty-card">
+          <div className="empty-icon" aria-hidden="true">📝</div>
+          <h3 className="empty-title">No Research Questions Submitted Yet</h3>
+          <p className="empty-subtitle">
+            Be the first researcher to submit a research question for Cohort Round #{currentRound.round_id}.
+          </p>
         </div>
       </div>
     );
@@ -62,14 +66,20 @@ export const QuestionQueue: React.FC = () => {
   return (
     <div className="queue-container">
       <div className="queue-header-bar">
-        <h3 className="queue-heading">
-          Submitted Research Questions ({submissions.length})
-        </h3>
-        {allocations && (
-          <span className="queue-ranking-note">
-            Ranked by priority score & deterministic tie-break
-          </span>
-        )}
+        <div className="queue-title-row">
+          <h3 className="queue-heading">
+            Submitted Research Questions ({submissions.length})
+          </h3>
+          {allocations ? (
+            <span className="queue-ranking-note">
+              Ranked by priority score &amp; deterministic tie-break
+            </span>
+          ) : (
+            <span className="queue-ranking-note">
+              Click any question to inspect frozen evidence and validator consensus
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="queue-records-wrapper" role="list">
@@ -108,8 +118,8 @@ export const QuestionQueue: React.FC = () => {
               <div className="record-header">
                 <div className="record-identity">
                   {allocations && (
-                    <span className="rank-badge" title="Deterministic Queue Rank">
-                      #{index + 1}
+                    <span className={`rank-badge ${index < currentRound.slot_count ? 'rank-allocated' : 'rank-waitlist'}`} title="Deterministic Queue Rank">
+                      Rank #{index + 1}
                     </span>
                   )}
                   <span className="record-sub-id">ID: #{sub.submission_id}</span>
@@ -117,10 +127,17 @@ export const QuestionQueue: React.FC = () => {
                 </div>
 
                 {ev && ev.outcome === 'SCORED' && (
-                  <div className="record-score-badge" title="Consensus Total Score / 16">
+                  <div className="record-score-badge" title="Consensus Priority Score / 16">
                     <span className="score-label">Score:</span>
                     <span className="score-val">{ev.total_score}</span>
                     <span className="score-max">/16</span>
+                  </div>
+                )}
+
+                {ev && ev.outcome === 'UNRESOLVED' && (
+                  <div className="record-score-badge score-unresolved" title="Evidence Unresolved">
+                    <span className="score-label">Outcome:</span>
+                    <span className="score-val">UNRESOLVED</span>
                   </div>
                 )}
               </div>
@@ -133,10 +150,10 @@ export const QuestionQueue: React.FC = () => {
                     Key: {sub.canonical_subject_key}
                   </span>
                   <span className="chip-urls" title="Evidence Citations">
-                    {sub.evidence_urls.length} Citations
+                    {sub.evidence_urls.length} {sub.evidence_urls.length === 1 ? 'Citation' : 'Citations'}
                   </span>
                   {sub.reviewer_address && (
-                    <span className="chip-reviewer" title="Reviewer Address">
+                    <span className="chip-reviewer" title="Designated Reviewer Address">
                       Reviewer: {sub.reviewer_address.slice(0, 6)}…{sub.reviewer_address.slice(-4)}
                     </span>
                   )}
@@ -166,6 +183,15 @@ export const QuestionQueue: React.FC = () => {
                       Acknowledge Slot
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    className="btn-inspect-link"
+                    onClick={() => setSelectedSubmissionId(sub.submission_id)}
+                    title="Inspect evidence details and score breakdown"
+                  >
+                    {isSelected ? 'Inspecting ▾' : 'Inspect Evidence →'}
+                  </button>
                 </div>
               </div>
             </article>

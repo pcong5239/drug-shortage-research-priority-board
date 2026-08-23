@@ -176,12 +176,10 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
         setSubmissions(subList);
         setEvaluations(evalMap);
 
-        // Auto-select first submission if none selected
-        if (subList.length > 0) {
-          setSelectedSubmissionId((prev) => (prev && subList.some((s) => s.submission_id === prev) ? prev : subList[0].submission_id));
-        } else {
-          setSelectedSubmissionId(null);
-        }
+        // Keep the inspector closed until the user explicitly selects a submission.
+        setSelectedSubmissionId((prev) =>
+          prev && subList.some((s) => s.submission_id === prev) ? prev : null
+        );
 
         // 4. Fetch allocations if evaluated or beyond
         if (['ALLOCATED', 'CLAIM', 'FINAL'].includes(rData.state)) {

@@ -9,7 +9,7 @@ import { Inspector } from '../components/Inspector';
 import { MedicalDisclaimerBanner } from '../components/MedicalDisclaimerBanner';
 import * as contractService from '../services/contract';
 import * as clientService from '../services/client';
-import type { RoundData } from '../types/contract';
+import type { RoundData, SubmissionData } from '../types/contract';
 
 const sampleRound: RoundData = {
   round_id: 1,
@@ -32,6 +32,24 @@ const sampleRound: RoundData = {
   locked_at: 0,
   allocated_at: 0,
   finalized_at: 0,
+};
+
+const sampleSubmission: SubmissionData = {
+  submission_id: 1,
+  round_id: 1,
+  submitter: '0x2222222222222222222222222222222222222222',
+  reviewer_address: '0x3333333333333333333333333333333333333333',
+  question_text: 'Which public evidence gap should researchers prioritize?',
+  normalized_question: 'which public evidence gap should researchers prioritize?',
+  canonical_subject_key: 'safe-link-test',
+  evidence_urls: ['https://www.fda.gov/drugs/drug-safety-and-availability/drug-shortages'],
+  submitted_at: 1770000001,
+  status: 'PENDING',
+  allocated_at: 0,
+  claim_deadline: 0,
+  acknowledged_at: 0,
+  acknowledged_by: '',
+  expired_at: 0,
 };
 
 describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
@@ -254,8 +272,8 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
     expect(await screen.findByText(/Round Open — Accepting Research Questions/i)).toBeInTheDocument();
   });
 
-  // Scenario 47: Empty inspector state handled gracefully
-  it('Scenario 47: renders empty inspector state when no submission selected', async () => {
+  // Scenario 47: Closed inspector is absent from the accessibility tree
+  it('Scenario 47: does not render the inspector drawer before a submission is selected', async () => {
     await act(async () => {
       render(
         <WalletProvider>
@@ -266,22 +284,31 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
       );
     });
 
-    expect(screen.getByText(/Select a research question from the queue/i)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog', { name: /Evidence and Evaluation Inspector/i })).not.toBeInTheDocument();
   });
 
   // Scenario 48: Evidence URLs render as external links with rel="noopener noreferrer" and disclaimer
   it('Scenario 48: renders evidence citations with safe external link attributes', async () => {
+    vi.spyOn(contractService, 'fetchRoundCount').mockResolvedValue(1);
+    vi.spyOn(contractService, 'fetchRound').mockResolvedValue(sampleRound);
+    vi.spyOn(contractService, 'fetchSubmissionCount').mockResolvedValue(1);
+    vi.spyOn(contractService, 'fetchSubmission').mockResolvedValue(sampleSubmission);
+
     await act(async () => {
       render(
         <WalletProvider>
           <ContractProvider contractAddressOverride="0x1111111111111111111111111111111111111111">
-            <Inspector />
+            <AppContent />
           </ContractProvider>
         </WalletProvider>
       );
     });
 
-    expect(screen.getByText(/Evidence Inspector/i)).toBeInTheDocument();
+    await screen.findByText(sampleSubmission.question_text, {}, { timeout: 5000 });
+    fireEvent.click(screen.getByTestId('question-item-1'));
+    const evidenceLink = await screen.findByRole('link', { name: sampleSubmission.evidence_urls[0] });
+    expect(evidenceLink).toHaveAttribute('target', '_blank');
+    expect(evidenceLink).toHaveAttribute('rel', 'noopener noreferrer');
   });
 
   // Scenario 49: Medical limitation banner permanently visible across all views

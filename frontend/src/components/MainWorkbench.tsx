@@ -21,11 +21,13 @@ export const MainWorkbench: React.FC = () => {
   const { connectedAccount, isCorrectChain } = useWallet();
 
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
+  const [showTrustDetails, setShowTrustDetails] = useState(false);
 
   if (!isContractConfigured) {
     return (
       <main className="main-workbench" role="main">
         <div className="workbench-banner-state state-unconfigured">
+          <div className="banner-state-icon" aria-hidden="true">⚠️</div>
           <h2>Intelligent Contract Not Configured</h2>
           <p>
             The environment variable <code>VITE_GENLAYER_CONTRACT_ADDRESS</code> is not set or empty.
@@ -40,8 +42,9 @@ export const MainWorkbench: React.FC = () => {
     return (
       <main className="main-workbench" role="main">
         <div className="workbench-banner-state state-empty">
+          <div className="banner-state-icon" aria-hidden="true">📋</div>
           <h2>No Research Priority Round Selected</h2>
-          <p>Create a new round using the left context rail or select an existing round from the dropdown.</p>
+          <p>Create a new round using the round controls or select an existing round from the dropdown above.</p>
         </div>
       </main>
     );
@@ -62,10 +65,60 @@ export const MainWorkbench: React.FC = () => {
 
   const canLock = Boolean(callerStatus?.can_lock || (isCreator && submissions.length > 0));
 
+  const evalProgress =
+    currentRound.submission_count > 0
+      ? Math.round((currentRound.evaluated_count / currentRound.submission_count) * 100)
+      : 0;
+
   return (
     <main className="main-workbench" role="main">
       <TransactionLiveRegion />
 
+      {/* Judge & Trust Model Explainer Card */}
+      <section className="trust-model-banner" aria-label="GenLayer Trust & Consensus Model">
+        <div className="trust-header">
+          <div className="trust-title-group">
+            <span className="trust-shield-icon" aria-hidden="true">🛡️</span>
+            <div className="trust-titles">
+              <h3 className="trust-heading">Decentralized Evidence Scoring via GenLayer Consensus</h3>
+              <p className="trust-subheading">
+                Resolving intake self-interest: neither submitters nor round creators can unilaterally rank questions.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn-toggle-trust"
+            onClick={() => setShowTrustDetails(!showTrustDetails)}
+            aria-expanded={showTrustDetails}
+          >
+            {showTrustDetails ? 'Hide Trust Model' : 'How Consensus Works'}
+          </button>
+        </div>
+
+        {showTrustDetails && (
+          <div className="trust-details-grid">
+            <div className="trust-step-card">
+              <div className="step-badge">1. Evidence Freeze</div>
+              <p>Each round freezes an openFDA snapshot digest and 1–5 PubMed/HTTPS citations per question.</p>
+            </div>
+            <div className="trust-step-card">
+              <div className="step-badge">2. Validator Refetch</div>
+              <p>GenLayer validators independently refetch frozen citations and verify the SHA-256 snapshot hash.</p>
+            </div>
+            <div className="trust-step-card">
+              <div className="step-badge">3. 16-Point Rubric</div>
+              <p>Validators derive 0–4 integer scores for Urgency Signal, Evidence Gap, Relevance, and Feasibility.</p>
+            </div>
+            <div className="trust-step-card">
+              <div className="step-badge">4. Deterministic Ranking</div>
+              <p>Total score descending &rarr; Urgency descending &rarr; Gap descending &rarr; ID ascending.</p>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Stage Actions Panel */}
       <section className="stage-actions-panel" aria-label="Current Stage Actions">
         <div className="stage-actions-header">
           <div className="stage-info">
@@ -110,9 +163,18 @@ export const MainWorkbench: React.FC = () => {
 
             {isLocked && (
               <div className="eval-progress-cluster">
+                <div className="eval-progress-bar-bg">
+                  <div
+                    className="eval-progress-bar-fill"
+                    style={{ width: `${evalProgress}%` }}
+                    aria-valuenow={evalProgress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  />
+                </div>
                 <span className="eval-counter">
                   Evaluated: <strong>{currentRound.evaluated_count}</strong> /{' '}
-                  <strong>{currentRound.submission_count}</strong> questions
+                  <strong>{currentRound.submission_count}</strong> questions ({evalProgress}%)
                 </span>
               </div>
             )}
@@ -154,7 +216,7 @@ export const MainWorkbench: React.FC = () => {
 
             {isFinal && (
               <div className="finalized-stamp">
-                ✓ Round Finalized ({currentRound.slot_count} Slots Allocated)
+                <span className="stamp-icon">✓</span> Round Finalized ({currentRound.slot_count} Slots Allocated)
               </div>
             )}
           </div>

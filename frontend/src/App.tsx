@@ -20,8 +20,9 @@ export const AppContent: React.FC = () => {
       <div className="workbench-layout" id="main-workbench-content">
         <RoundContextRail />
         <MainWorkbench />
-        <Inspector />
       </div>
+
+      <Inspector />
     </div>
   );
 };
