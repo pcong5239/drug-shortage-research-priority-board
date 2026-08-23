@@ -122,7 +122,13 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
   }, []);
 
   const refreshData = useCallback(async () => {
-    if (!contractAddress || refreshInFlightRef.current) return;
+    if (!contractAddress) return;
+
+    // A write may finish while the mount/account refresh is still running.
+    // Wait for that read to finish, then perform the write's authoritative refresh.
+    while (refreshInFlightRef.current) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
 
     refreshInFlightRef.current = true;
     setIsLoading(true);

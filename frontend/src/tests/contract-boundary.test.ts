@@ -217,6 +217,7 @@ describe('Contract Boundary & Data Parsing (Scenarios 27–38)', () => {
       actionName: 'Create Round',
       onStateChange,
       performReadback: failingReadback,
+      readbackTimeoutMs: 0,
     });
 
     expect(outcome.success).toBe(false);
@@ -264,6 +265,36 @@ describe('Contract Boundary & Data Parsing (Scenarios 27–38)', () => {
     expect(outcome.success).toBe(true);
     expect(outcome.returnedId).toBe(1n);
     expect(passingReadback).toHaveBeenCalled();
+  });
+
+  it('retries a delayed authoritative readback without replaying the write', async () => {
+    const mockReceipt = {
+      status: 'FINALIZED',
+      execution_result: 'FINISHED_WITH_RETURN',
+      consensus_data: { leader_receipt: [{ result: encodeReturn(1n) }] },
+    };
+    const writeContract = vi.fn().mockResolvedValue('0xdelayedreadback');
+    vi.spyOn(clientService, 'createWalletBoundClient').mockReturnValue({
+      writeContract,
+      getTransaction: vi.fn().mockResolvedValue(mockReceipt),
+    } as any);
+    const readback = vi.fn().mockResolvedValueOnce(false).mockResolvedValue(true);
+
+    const outcome = await executeContractWrite({
+      contractAddress: '0x1111111111111111111111111111111111111111',
+      provider: { request: vi.fn() } as any,
+      accountAddress: '0x2222222222222222222222222222222222222222',
+      functionName: 'submit_question',
+      args: [],
+      actionName: 'Submit Question',
+      onStateChange: vi.fn(),
+      performReadback: readback,
+      readbackTimeoutMs: 2000,
+    });
+
+    expect(outcome.success).toBe(true);
+    expect(readback).toHaveBeenCalledTimes(2);
+    expect(writeContract).toHaveBeenCalledTimes(1);
   });
 
   // Scenario 37: Write returns new round ID

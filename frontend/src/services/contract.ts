@@ -479,6 +479,7 @@ export interface ExecuteWriteOptions {
   onStateChange: (state: TransactionState) => void;
   performReadback?: (returnedId: bigint | number | null) => Promise<boolean>;
   timeoutMs?: number;
+  readbackTimeoutMs?: number;
 }
 
 export async function executeContractWrite({
@@ -490,7 +491,8 @@ export async function executeContractWrite({
   actionName,
   onStateChange,
   performReadback,
-  timeoutMs = 60000,
+  timeoutMs = 240000,
+  readbackTimeoutMs = 20000,
 }: ExecuteWriteOptions): Promise<{ success: boolean; txHash: string | null; returnedId: bigint | number | null }> {
   let currentState: TransactionState = {
     stage: 'SIGNING',
@@ -606,37 +608,48 @@ export async function executeContractWrite({
 
     // 6. READBACK CONFIRMED: Perform on-chain verification
     if (performReadback) {
-      try {
-        const confirmed = await performReadback(returnedId);
-        if (confirmed) {
-          currentState = {
-            ...currentState,
-            stage: 'READBACK_CONFIRMED',
-            readbackStatus: 'CONFIRMED',
-            details: 'Readback confirmed on-chain state change.',
-          };
-          onStateChange(currentState);
-          return { success: true, txHash, returnedId };
-        } else {
+      const readbackDeadline = Date.now() + readbackTimeoutMs;
+      let lastReadbackError: unknown = null;
+
+      do {
+        try {
+          const confirmed = await performReadback(returnedId);
+          if (confirmed) {
+            currentState = {
+              ...currentState,
+              stage: 'READBACK_CONFIRMED',
+              readbackStatus: 'CONFIRMED',
+              details: 'Readback confirmed on-chain state change.',
+            };
+            onStateChange(currentState);
+            return { success: true, txHash, returnedId };
+          }
+        } catch (readbackErr) {
+          lastReadbackError = readbackErr;
+        }
+
+        if (Date.now() < readbackDeadline) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      } while (Date.now() < readbackDeadline);
+
+      if (lastReadbackError) {
+        currentState = {
+          ...currentState,
+          stage: 'ERROR',
+          readbackStatus: 'DELAYED',
+          error: `Readback error: ${lastReadbackError instanceof Error ? lastReadbackError.message : String(lastReadbackError)}`,
+        };
+      } else {
           currentState = {
             ...currentState,
             stage: 'ERROR',
             readbackStatus: 'MISMATCH',
             error: 'Authoritative contract readback did not confirm expected on-chain state change.',
           };
-          onStateChange(currentState);
-          return { success: false, txHash, returnedId };
-        }
-      } catch (readbackErr) {
-        currentState = {
-          ...currentState,
-          stage: 'ERROR',
-          readbackStatus: 'DELAYED',
-          error: `Readback error: ${readbackErr instanceof Error ? readbackErr.message : String(readbackErr)}`,
-        };
-        onStateChange(currentState);
-        return { success: false, txHash, returnedId };
       }
+      onStateChange(currentState);
+      return { success: false, txHash, returnedId };
     }
 
     currentState = {
