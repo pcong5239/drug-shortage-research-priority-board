@@ -8,6 +8,7 @@ import { TransactionLiveRegion } from './TransactionLiveRegion';
 export const MainWorkbench: React.FC = () => {
   const {
     currentRound,
+    allocations,
     callerStatus,
     submissions,
     lockRound,
@@ -255,7 +256,7 @@ export const MainWorkbench: React.FC = () => {
 
             {isFinal && (
               <div className="finalized-stamp">
-                <span className="stamp-icon">✓</span> Round Finalized ({currentRound.slot_count} Slots Allocated)
+                <span className="stamp-icon">✓</span> Round Finalized ({allocations?.allocated_submission_ids.length ?? 0} Slots Allocated)
               </div>
             )}
           </div>

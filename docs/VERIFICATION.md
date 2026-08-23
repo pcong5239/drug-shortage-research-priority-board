@@ -29,7 +29,7 @@ After the authorized upgrade, `gen_getContractCode` returned 47,874 bytes with t
 | Direct contract suite | 33 passed |
 | GenVM lint/validation | 3 checks passed; 19 methods validated |
 | GenVM schema/typecheck | passed; no type errors |
-| Frontend suite | 73 passed |
+| Frontend suite | 74 passed |
 | Frontend typecheck/build | passed |
 
 ## Studionet RPC budget
@@ -114,4 +114,24 @@ Round 3 evaluated two submissions with identical ranking keys `(total 9, urgency
 - Reclaim/promotion: [`0xf0d05d8bb015cd569bca012f93665d24f1bda18aa269a8e9c551513e77049fa0`](https://explorer-studio.genlayer.com/tx/0xf0d05d8bb015cd569bca012f93665d24f1bda18aa269a8e9c551513e77049fa0) changed ID `1` to `EXPIRED` and ID `2` to `ALLOCATED`.
 - Promoted acknowledgment/finalize: [`0x4a302941b0db0fa4777dc92b6e8414cc2101d6867a58c335c747e8c59ddb8e2c`](https://explorer-studio.genlayer.com/tx/0x4a302941b0db0fa4777dc92b6e8414cc2101d6867a58c335c747e8c59ddb8e2c), [`0x3baab8cfa70f8db72b7c0ae16448f89dca33b03c0b7a98b3ce11e99f8e0698e4`](https://explorer-studio.genlayer.com/tx/0x3baab8cfa70f8db72b7c0ae16448f89dca33b03c0b7a98b3ce11e99f8e0698e4). Final readback: round `FINAL`, active allocated ID `[2]`, no waitlist.
 
-The live Studio matrix is complete for the exact deployed contract. Production Vercel E2E and the final anonymous checkpoint remain later gates and are not claimed here.
+## Production Vercel E2E
+
+- Stable URL: `https://drug-shortage-research-priority-boa.vercel.app`
+- Wallet/provider: OKX Wallet, exact selected provider object, account `0x5D598f10a428fb2039edbc3ace83351650b286e0`.
+- Fresh reload began disconnected, exposed the EIP-6963 chooser, and connected the selected OKX provider. A second reload after Round 4 creation again began disconnected and automatically loaded the new round.
+- Production contract configuration was verified as `0xba5fC48885c201C3efcE04B8810EAdf5376433d9`; the obsolete Vercel environment address was corrected before any write was sent.
+- Round 4 arguments were the form's frozen demo fixture: snapshot `https://drug-shortage-research-priority-boa.vercel.app/openfda-demo-snapshot.json`, SHA-256 `ab4749c2c0a05e0f789a1a121fe1ee6d62fb9c0ed62575dec15bac04c3d176d4`, captured at `1787509504`, deadline `1787768704`, claim duration `3600`, slot capacity `2`.
+
+| Browser action | Transaction | Terminal evidence | Authoritative UI/readback |
+|---|---|---|---|
+| create Round 4 | [`0x4f0079…6058`](https://explorer-studio.genlayer.com/tx/0x4f00790a204b76b8e311f42013fe604c887ea1238dcda5b659cafcd7d4f46058) | `FINALIZED`, execution `SUCCESS`, majority agree | round count `3 → 4`; Round 4 `OPEN`; creator matched OKX. The first bounded UI readback exposed the normalized-return decoder defect; direct authoritative readback confirmed the write, its hash was preserved, and the write was never replayed. |
+| submit question ID 1 | [`0x8438bc…d7498`](https://explorer-studio.genlayer.com/tx/0x8438bcb18ca5524352b78c947c8dbbaf73f469c003fd6beb6f2fbea57b2d7498) | `FINALIZED`, execution `SUCCESS` | normalized return envelope decoded ID `1`; `READBACK_CONFIRMED`; form closed and queue updated without reload. |
+| lock Round 4 | [`0x8c2a12…d7a13`](https://explorer-studio.genlayer.com/tx/0x8c2a12914b11db296cbb6db12450e3fa5bf8ed7966fe2721c3328d1bf61d7a13) | `FINALIZED`, execution `SUCCESS` | `OPEN → LOCKED`; `READBACK_CONFIRMED`. |
+| evaluate question ID 1 | [`0x6806fb…bcf37`](https://explorer-studio.genlayer.com/tx/0x6806fb72c2c00d48392561aafc6a495d3318870963d160bd059f8666fbcbcf37) | `FINALIZED`, execution `SUCCESS`, consensus evaluation | ID 1 `SCORED`, total `9/16`; round `EVALUATED`; `READBACK_CONFIRMED`. |
+| allocate slots | [`0x2749ec…08f76`](https://explorer-studio.genlayer.com/tx/0x2749ec80d7f3ca868c5b28657f11898cb34fd3a228a5309ca4e3a32e90108f76) | `FINALIZED`, execution `SUCCESS` | ID 1 `ALLOCATED`; round `CLAIM`; `READBACK_CONFIRMED`. |
+| acknowledge ID 1 | [`0x1827bd…dd992`](https://explorer-studio.genlayer.com/tx/0x1827bda3a551b18bbea124889795ef691eb6d23062f062f841e2e0c39b2dd992) | `FINALIZED`, execution `SUCCESS` | ID 1 `ACKNOWLEDGED`; `READBACK_CONFIRMED`. |
+| finalize Round 4 | [`0x1ec3e4…ae690`](https://explorer-studio.genlayer.com/tx/0x1ec3e4629ef3937fd98ef3d7b89dc8e5884f12f9c1488c066ca75890188ae690) | `FINALIZED`, execution `SUCCESS` | round `FINAL`; ID 1 remained `ACKNOWLEDGED`; `READBACK_CONFIRMED`. |
+
+The captured normalized receipt envelope (`result.payload.readable`) is now decoded at the SDK boundary and has an executable regression. The finalized banner uses `allocations.allocated_submission_ids.length`, not configured slot capacity, and has a regression for capacity `2` with one actual allocation. No write was submitted twice.
+
+The live Studio matrix and production Vercel lifecycle are complete for the deployed contract. The final anonymous checkpoint remains a later gate and is not claimed here.

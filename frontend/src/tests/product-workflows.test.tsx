@@ -350,6 +350,33 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
     expect(await screen.findByText(/Round Locked — Consensus Evidence Evaluation/i)).toBeInTheDocument();
   });
 
+  it('shows the authoritative allocated count instead of the configured slot capacity', async () => {
+    vi.spyOn(contractService, 'fetchRoundCount').mockResolvedValue(1);
+    vi.spyOn(contractService, 'fetchRound').mockResolvedValue({
+      ...sampleRound,
+      state: 'FINAL',
+      slot_count: 2,
+    });
+    vi.spyOn(contractService, 'fetchSubmissionCount').mockResolvedValue(0);
+    vi.spyOn(contractService, 'fetchAllocations').mockResolvedValue({
+      round_id: 1,
+      allocated_submission_ids: [1],
+      waitlisted_submission_ids: [],
+      unresolved_submission_ids: [],
+      allocated_at: 1770000010,
+    });
+
+    render(
+      <WalletProvider>
+        <ContractProvider contractAddressOverride="0x1111111111111111111111111111111111111111">
+          <AppContent />
+        </ContractProvider>
+      </WalletProvider>,
+    );
+
+    expect(await screen.findByText('Round Finalized (1 Slots Allocated)')).toBeInTheDocument();
+  });
+
   // Scenario 46: Handles round with 0 submissions cleanly
   it('Scenario 46: handles round with 0 submissions cleanly', async () => {
     vi.spyOn(contractService, 'fetchRoundCount').mockResolvedValue(1);
