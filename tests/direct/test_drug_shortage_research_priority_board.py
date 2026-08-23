@@ -1260,6 +1260,10 @@ def test_26_nondet_closure_does_not_depend_on_persistent_objects(direct_vm, dire
 # 27. Defect 1 Regression: Root Slot Upgrade & Upgrader Readback
 # -----------------------------------------------------------------------------
 def test_27_root_slot_upgrade_and_upgraders_readback(direct_vm, direct_deploy):
+    source_lines = Path(CONTRACT_PATH).read_text(encoding="utf-8").splitlines()
+    assert source_lines[0] == "# v0.1.0"
+    assert source_lines[1].startswith('# { "Depends": "py-genlayer:')
+
     direct_vm.sender = DEPLOYER
     contract = direct_deploy(CONTRACT_PATH)
 
