@@ -4,6 +4,15 @@ import type { EIP1193Provider } from '../types/wallet';
 
 let publicClientInstance: ReturnType<typeof createClient> | null = null;
 
+export function configurePublicReadProvider(
+  provider: EIP1193Provider | null,
+  accountAddress: string | null
+): void {
+  publicClientInstance = provider && accountAddress
+    ? createWalletBoundClient(provider, accountAddress)
+    : null;
+}
+
 export function getPublicClient(): ReturnType<typeof createClient> {
   if (!publicClientInstance) {
     publicClientInstance = createClient({

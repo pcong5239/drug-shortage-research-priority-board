@@ -23,6 +23,7 @@ import {
   executeContractWrite,
 } from '../services/contract';
 import { useWallet } from './WalletContext';
+import { configurePublicReadProvider } from '../services/client';
 
 export interface ContractContextValue {
   contractAddress: string | null;
@@ -120,6 +121,10 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
   const resetTxState = useCallback(() => {
     setTxState(INITIAL_TX_STATE);
   }, []);
+
+  useEffect(() => {
+    configurePublicReadProvider(connectedProvider, connectedAccount);
+  }, [connectedProvider, connectedAccount]);
 
   const refreshData = useCallback(async () => {
     if (!contractAddress || refreshInFlightRef.current) return;
