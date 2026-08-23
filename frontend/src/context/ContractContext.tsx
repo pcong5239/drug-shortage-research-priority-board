@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import type {
   RoundData,
   SubmissionData,
@@ -114,21 +114,24 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [txState, setTxState] = useState<TransactionState>(INITIAL_TX_STATE);
+  const refreshInFlightRef = useRef(false);
+  const skipNextSelectionRefreshRef = useRef(false);
 
   const resetTxState = useCallback(() => {
     setTxState(INITIAL_TX_STATE);
   }, []);
 
   const refreshData = useCallback(async () => {
-    if (!contractAddress) return;
+    if (!contractAddress || refreshInFlightRef.current) return;
 
+    refreshInFlightRef.current = true;
     setIsLoading(true);
     setError(null);
 
     try {
       // 1. Fetch static / high-level metadata
       const [count, lims, disc, upgs] = await Promise.all([
-        fetchRoundCount(contractAddress).catch(() => 0),
+        fetchRoundCount(contractAddress),
         fetchLimits(contractAddress).catch(() => null),
         fetchContractDisclaimer(contractAddress).catch(() => ''),
         fetchUpgraders(contractAddress).catch(() => []),
@@ -143,6 +146,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       let activeRoundId = selectedRoundId;
       if (activeRoundId === null && count > 0) {
         activeRoundId = count; // Default to latest round
+        skipNextSelectionRefreshRef.current = true;
         setSelectedRoundId(count);
       }
 
@@ -214,12 +218,17 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
     } catch (err: any) {
       setError(`Failed to fetch on-chain state: ${err?.message || String(err)}`);
     } finally {
+      refreshInFlightRef.current = false;
       setIsLoading(false);
     }
   }, [contractAddress, selectedRoundId, connectedAccount]);
 
   useEffect(() => {
     if (isContractConfigured) {
+      if (skipNextSelectionRefreshRef.current) {
+        skipNextSelectionRefreshRef.current = false;
+        return;
+      }
       refreshData();
     }
   }, [isContractConfigured, refreshData]);

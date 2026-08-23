@@ -305,6 +305,7 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
     });
 
     await screen.findByText(sampleSubmission.question_text, {}, { timeout: 5000 });
+    expect(contractService.fetchRoundCount).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByTestId('question-item-1'));
     const evidenceLink = await screen.findByRole('link', { name: sampleSubmission.evidence_urls[0] });
     expect(evidenceLink).toHaveAttribute('target', '_blank');
