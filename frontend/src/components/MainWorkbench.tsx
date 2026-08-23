@@ -56,6 +56,18 @@ export const MainWorkbench: React.FC = () => {
     );
   }
 
+  if (isLoading && !currentRound) {
+    return (
+      <main className="main-workbench" role="main" aria-busy="true">
+        <div className="workbench-banner-state state-empty" role="status">
+          <div className="banner-state-icon" aria-hidden="true">⏳</div>
+          <h2>Loading Studionet State</h2>
+          <p>Reading the latest rounds and authoritative contract state…</p>
+        </div>
+      </main>
+    );
+  }
+
   if (!currentRound) {
     return (
       <main className="main-workbench" role="main">

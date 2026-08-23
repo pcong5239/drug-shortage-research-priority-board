@@ -7,7 +7,7 @@ import {
   toSafeInteger,
   toSafeBigInt,
 } from '../services/validation';
-import { classifyReceipt, executeContractWrite, normalizeContractAddress } from '../services/contract';
+import { classifyReceipt, executeContractWrite, fetchRoundCount, normalizeContractAddress } from '../services/contract';
 import * as clientService from '../services/client';
 
 const encodeReturn = (value: bigint): `0x${string}` =>
@@ -362,5 +362,45 @@ describe('Contract Boundary & Data Parsing (Scenarios 27–38)', () => {
     });
 
     expect(outcome.returnedId).toBe(12n);
+  });
+});
+
+describe('Studionet RPC budget regressions', () => {
+  it('deduplicates identical reads that are already in flight', async () => {
+    let release!: (value: number) => void;
+    const pending = new Promise<number>((resolve) => { release = resolve; });
+    const readContract = vi.fn().mockReturnValue(pending);
+    vi.spyOn(clientService, 'getPublicClient').mockReturnValue({ readContract } as any);
+
+    const first = fetchRoundCount('0x1111111111111111111111111111111111111111');
+    const second = fetchRoundCount('0x1111111111111111111111111111111111111111');
+    expect(readContract).toHaveBeenCalledTimes(1);
+    release(3);
+    await expect(Promise.all([first, second])).resolves.toEqual([3, 3]);
+  });
+
+  it('cancels before an RPC read is submitted', async () => {
+    const readContract = vi.fn();
+    vi.spyOn(clientService, 'getPublicClient').mockReturnValue({ readContract } as any);
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(fetchRoundCount('0x1111111111111111111111111111111111111111', controller.signal))
+      .rejects.toMatchObject({ name: 'AbortError' });
+    expect(readContract).not.toHaveBeenCalled();
+  });
+
+  it('bounds 429 retries and never turns a read into an infinite loop', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const readContract = vi.fn().mockRejectedValue(new Error('HTTP 429 rate limit'));
+    vi.spyOn(clientService, 'getPublicClient').mockReturnValue({ readContract } as any);
+
+    const result = fetchRoundCount('0x1111111111111111111111111111111111111111');
+    const rejection = expect(result).rejects.toThrow(/429/i);
+    await vi.runAllTimersAsync();
+    await rejection;
+    expect(readContract).toHaveBeenCalledTimes(3);
+    vi.useRealTimers();
   });
 });

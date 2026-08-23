@@ -74,19 +74,9 @@ export const RpcLatencyMonitor: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-    checkRpcHealth();
-
-    const interval = setInterval(() => {
-      checkRpcHealth();
-    }, 30000);
-
-    return () => {
-      isMountedRef.current = false;
-      clearInterval(interval);
-    };
-  }, [checkRpcHealth]);
+  useEffect(() => () => {
+    isMountedRef.current = false;
+  }, []);
 
   const getStatusDotClass = () => {
     switch (health.status) {
@@ -103,7 +93,7 @@ export const RpcLatencyMonitor: React.FC = () => {
   };
 
   const getStatusLabel = () => {
-    if (health.status === 'checking') return 'Checking RPC…';
+    if (health.status === 'checking') return 'Check RPC';
     if (health.status === 'offline') return 'RPC Offline';
     if (health.latencyMs !== null) return `${health.latencyMs}ms`;
     return 'RPC Ready';

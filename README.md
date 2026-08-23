@@ -21,12 +21,11 @@ Evidence fetch, digest, freshness, schema, or consensus failures become retry-sa
 
 ## Studionet deployment
 
-The address below is the superseded diagnostic deployment. A corrected release candidate with contract SHA-256 `40d65955e75a15741a8f27a79fcc60b9b6256c6055f33dc5b4c978ee2412561c` is awaiting governed PRE_DEPLOY review and a fresh Studionet deployment. Do not treat the prior address as the final candidate.
-
 - Network: GenLayer Studionet (`61999`)
-- Contract: [`0x26C0413ED148085A8187D5dC47CEA06Ea4931A6A`](https://explorer-studio.genlayer.com/address/0x26C0413ED148085A8187D5dC47CEA06Ea4931A6A)
-- Deployment transaction: [`0x4999f6bc…8e193`](https://explorer-studio.genlayer.com/tx/0x4999f6bc8972e695e3c0f241aeea7bd489f867807200b293f1bc1b9bd788e193)
-- Contract source SHA-256: `1f56f9df2fc6a2e0f4063dc90a57860a225b30e83568caf65ec17892622a8d9a`
+- Contract: [`0xba5fC48885c201C3efcE04B8810EAdf5376433d9`](https://explorer-studio.genlayer.com/address/0xba5fC48885c201C3efcE04B8810EAdf5376433d9)
+- Deployment transaction: [`0x3f226de5…03eb47`](https://explorer-studio.genlayer.com/tx/0x3f226de5c8dfb45f59efc93765d97a5c689e06f9f345f3ccf88ef2f8ed03eb47)
+- Exact-source upgrade transaction: [`0x1d40fb9c…20fd7`](https://explorer-studio.genlayer.com/tx/0x1d40fb9c8f0dbcc958eb63fb7be36428b62999f418463cb90e66636bbf120fd7)
+- Contract source SHA-256: `b9f9b29a6e0c1615be91c5d1add658064cfa3cfbd13cad52d9b7d4624fa9f805`
 
 Full transaction and source-parity evidence is in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
@@ -43,7 +42,7 @@ Requirements are already pinned in the project files.
 ```powershell
 cd frontend
 Copy-Item .env.example .env
-# Set VITE_GENLAYER_CONTRACT_ADDRESS to the Studionet address above.
+# This copies the verified Studionet contract address for local use.
 pnpm test -- --run
 pnpm run build
 pnpm dev

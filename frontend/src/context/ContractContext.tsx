@@ -94,7 +94,10 @@ interface ContractProviderProps {
 }
 
 export const ContractProvider: React.FC<ContractProviderProps> = ({ children, contractAddressOverride }) => {
-  const contractAddress = (contractAddressOverride || getContractAddress() || '').trim() || null;
+  // An explicit override, including an empty string, is authoritative. This keeps
+  // configuration diagnostics testable and prevents a stale build-time address
+  // from silently replacing a caller-supplied value.
+  const contractAddress = (contractAddressOverride ?? getContractAddress() ?? '').trim() || null;
   const isContractConfigured = Boolean(contractAddress);
 
   const { connectedAccount, connectedProvider, isCorrectChain } = useWallet();
@@ -121,14 +124,18 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
     setTxState(INITIAL_TX_STATE);
   }, []);
 
-  const refreshData = useCallback(async (preferredRoundId?: number) => {
+  const refreshData = useCallback(async (preferredRoundId?: number, reconcileAfterInFlight = false) => {
     if (!contractAddress) return;
 
     // A write may finish while the mount/account refresh is still running.
     // Wait for that read to finish, then perform the write's authoritative refresh.
+    const joinedExistingRefresh = refreshInFlightRef.current;
     while (refreshInFlightRef.current) {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
+    // React StrictMode and overlapping effects coalesce into the active refresh.
+    // Only a post-write reconciliation is allowed to run once more afterward.
+    if (joinedExistingRefresh && !reconcileAfterInFlight) return;
 
     refreshInFlightRef.current = true;
     setIsLoading(true);
@@ -305,9 +312,9 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
         if (createdRoundId !== null) {
           skipNextSelectionRefreshRef.current = true;
           setSelectedRoundId(createdRoundId);
-          await refreshData(createdRoundId);
+          await refreshData(createdRoundId, true);
         } else {
-          await refreshData();
+          await refreshData(undefined, true);
         }
       }
 
@@ -360,7 +367,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       });
 
       if (res.success) {
-        await refreshData();
+        await refreshData(undefined, true);
       }
 
       return {
@@ -393,7 +400,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       });
 
       if (res.success) {
-        await refreshData();
+        await refreshData(undefined, true);
       }
       return res.success;
     },
@@ -421,7 +428,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       });
 
       if (res.success) {
-        await refreshData();
+        await refreshData(undefined, true);
       }
       return res.success;
     },
@@ -449,7 +456,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       });
 
       if (res.success) {
-        await refreshData();
+        await refreshData(undefined, true);
       }
       return res.success;
     },
@@ -477,7 +484,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       });
 
       if (res.success) {
-        await refreshData();
+        await refreshData(undefined, true);
       }
       return res.success;
     },
@@ -506,7 +513,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       });
 
       if (res.success) {
-        await refreshData();
+        await refreshData(undefined, true);
       }
       return res.success;
     },
@@ -534,7 +541,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       });
 
       if (res.success) {
-        await refreshData();
+        await refreshData(undefined, true);
       }
       return res.success;
     },

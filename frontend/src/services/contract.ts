@@ -195,37 +195,82 @@ export function normalizeContractAddress(addr: string): string | null {
   return addr;
 }
 
+const inFlightReads = new Map<string, Promise<unknown>>();
+
+function readKey(request: Record<string, unknown>): string {
+  return JSON.stringify(request, (_key, value) => typeof value === 'bigint' ? value.toString() : value);
+}
+
+function isTransientRpcError(error: unknown): boolean {
+  const value = error as any;
+  const text = `${value?.message || ''} ${value?.code || ''}`.toLowerCase();
+  return text.includes('429') || text.includes('rate limit') || text.includes('server busy') || text.includes('-32029');
+}
+
+function abortError(): Error {
+  const error = new Error('RPC read cancelled');
+  error.name = 'AbortError';
+  return error;
+}
+
+async function readContractDeduped(request: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
+  if (signal?.aborted) throw abortError();
+  const key = readKey(request);
+  const existing = inFlightReads.get(key);
+  if (existing) return existing;
+
+  const operation = (async () => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (signal?.aborted) throw abortError();
+      try {
+        return await getPublicClient().readContract(request as any);
+      } catch (error) {
+        lastError = error;
+        if (!isTransientRpcError(error) || attempt === 2) throw error;
+        const delayMs = 500 * (2 ** attempt) + Math.floor(Math.random() * 150);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+    throw lastError;
+  })();
+
+  inFlightReads.set(key, operation);
+  try {
+    return await operation;
+  } finally {
+    if (inFlightReads.get(key) === operation) inFlightReads.delete(key);
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Read Calls with Runtime Validation
 // -----------------------------------------------------------------------------
 
-export async function fetchRoundCount(contractAddress: string): Promise<number> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+export async function fetchRoundCount(contractAddress: string, signal?: AbortSignal): Promise<number> {
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_round_count',
     args: [],
-  } as any);
+  }, signal);
   return toSafeInteger(raw, 0);
 }
 
 export async function fetchRound(contractAddress: string, roundId: number | bigint): Promise<RoundData> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_round',
     args: [toSafeBigInt(roundId)],
-  } as any);
+  });
   return validateRoundData(raw);
 }
 
 export async function fetchSubmissionCount(contractAddress: string, roundId: number | bigint): Promise<number> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_submission_count',
     args: [toSafeBigInt(roundId)],
-  } as any);
+  });
   return toSafeInteger(raw, 0);
 }
 
@@ -234,12 +279,11 @@ export async function fetchSubmission(
   roundId: number | bigint,
   submissionId: number | bigint
 ): Promise<SubmissionData> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_submission',
     args: [toSafeBigInt(roundId), toSafeBigInt(submissionId)],
-  } as any);
+  });
   return validateSubmissionData(raw);
 }
 
@@ -248,22 +292,20 @@ export async function fetchEvaluation(
   roundId: number | bigint,
   submissionId: number | bigint
 ): Promise<EvaluationData> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_evaluation',
     args: [toSafeBigInt(roundId), toSafeBigInt(submissionId)],
-  } as any);
+  });
   return validateEvaluationData(raw);
 }
 
 export async function fetchAllocations(contractAddress: string, roundId: number | bigint): Promise<AllocationsData> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_allocations',
     args: [toSafeBigInt(roundId)],
-  } as any);
+  });
   return validateAllocationsData(raw);
 }
 
@@ -272,42 +314,38 @@ export async function fetchCallerStatus(
   roundId: number | bigint,
   callerAddress: string
 ): Promise<CallerStatus> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_caller_status',
     args: [toSafeBigInt(roundId), callerAddress],
-  } as any);
+  });
   return validateCallerStatus(raw);
 }
 
 export async function fetchLimits(contractAddress: string): Promise<ContractLimits> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_limits',
     args: [],
-  } as any);
+  });
   return validateContractLimits(raw);
 }
 
 export async function fetchContractDisclaimer(contractAddress: string): Promise<string> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_contract_disclaimer',
     args: [],
-  } as any);
+  });
   return typeof raw === 'string' ? raw : String(raw || '');
 }
 
 export async function fetchUpgraders(contractAddress: string): Promise<string[]> {
-  const client = getPublicClient();
-  const raw = await client.readContract({
+  const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_upgraders',
     args: [],
-  } as any);
+  });
   if (Array.isArray(raw)) {
     return raw.map((a) => String(a).toLowerCase());
   }
@@ -544,6 +582,7 @@ export async function executeContractWrite({
     const startTime = Date.now();
     let classified: ClassifiedReceipt | null = null;
 
+    let pollAttempt = 0;
     while (Date.now() - startTime < timeoutMs) {
       try {
         let receipt: any = null;
@@ -561,9 +600,11 @@ export async function executeContractWrite({
           }
         }
       } catch (pollErr) {
-        // Wait and retry within bounded deadline
+        // Preserve the submitted hash and reconcile with bounded backoff.
       }
-      await new Promise((r) => setTimeout(r, 2000));
+      const pollDelayMs = Math.min(8000, 2000 * (2 ** Math.min(pollAttempt, 2))) + Math.floor(Math.random() * 250);
+      pollAttempt += 1;
+      await new Promise((r) => setTimeout(r, pollDelayMs));
     }
 
     if (!classified || !classified.isFinalized) {
@@ -611,6 +652,7 @@ export async function executeContractWrite({
       const readbackDeadline = Date.now() + readbackTimeoutMs;
       let lastReadbackError: unknown = null;
 
+      let readbackAttempt = 0;
       do {
         try {
           const confirmed = await performReadback(returnedId);
@@ -629,7 +671,9 @@ export async function executeContractWrite({
         }
 
         if (Date.now() < readbackDeadline) {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const readbackDelayMs = Math.min(8000, 1000 * (2 ** Math.min(readbackAttempt, 3)));
+          readbackAttempt += 1;
+          await new Promise((resolve) => setTimeout(resolve, readbackDelayMs));
         }
       } while (Date.now() < readbackDeadline);
 
