@@ -292,6 +292,9 @@ Canonical Subject Key:
 Evidence Sources:
 {evidence_summary}
 
+Allowed reason_codes (use only these exact strings):
+{_canonical_json(sorted(list(VALID_REASON_CODES)))}
+
 Evaluate the research proposal against the 4 criteria:
 1. relevance (integer 0 to 4): How directly does this address an active shortage research gap?
 2. evidence_gap (integer 0 to 4): How clearly is a research evidence gap identified?

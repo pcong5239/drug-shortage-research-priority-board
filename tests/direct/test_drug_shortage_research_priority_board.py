@@ -1,6 +1,7 @@
 import datetime
 import hashlib
 import json
+from pathlib import Path
 
 CONTRACT_PATH = "contracts/drug_shortage_research_priority_board.py"
 
@@ -96,6 +97,14 @@ def mock_llm_score(
         "rationale": rationale,
     }
     direct_vm.mock_llm(pattern, json.dumps(payload))
+
+
+def test_live_prompt_enumerates_every_allowed_reason_code():
+    source = Path(CONTRACT_PATH).read_text(encoding="utf-8")
+    prompt_start = source.index("Allowed reason_codes (use only these exact strings):")
+    prompt_end = source.index("Evaluate the research proposal against the 4 criteria:", prompt_start)
+    prompt_slice = source[prompt_start:prompt_end]
+    assert "sorted(list(VALID_REASON_CODES))" in prompt_slice
 
 
 def create_standard_round(
