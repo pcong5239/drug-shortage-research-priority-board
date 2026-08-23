@@ -75,6 +75,8 @@ pnpm --dir frontend run build
 
 Current result: 33 contract tests and 74 frontend tests pass; lint, schema, typecheck, production build, diff check, and secret scan pass. The full live transaction matrix is in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
+The completed evidence-based 0–5 assessment is in [docs/FINAL_SCORECARD.md](docs/FINAL_SCORECARD.md).
+
 ## Deployment
 
 - Network: GenLayer Studionet, chain ID `61999`
