@@ -1,3 +1,4 @@
+import ast
 import datetime
 import hashlib
 import json
@@ -107,12 +108,41 @@ def test_live_prompt_enumerates_every_allowed_reason_code():
     assert "sorted(list(VALID_REASON_CODES))" in prompt_slice
 
 
-def test_consensus_uses_bounded_score_equivalence_not_exact_llm_text():
+def test_consensus_requires_exact_allocation_ranking_keys():
     source = Path(CONTRACT_PATH).read_text(encoding="utf-8")
     assert "return _evaluation_matches(leader, validator)" in source
-    assert 'abs(int(leader[field]) - int(validator[field])) > 2' in source
-    assert 'abs(int(leader["total_score"]) - int(validator["total_score"])) <= 6' in source
+    assert '"total_score",' in source
+    assert '"urgency_signal",' in source
+    assert '"evidence_gap",' in source
+    assert 'abs(int(leader[field]) - int(validator[field])) > 2' not in source
+    assert 'abs(int(leader["total_score"]) - int(validator["total_score"])) <= 6' not in source
     assert "leader_reasons.intersection(validator_reasons)" in source
+
+
+def test_consensus_rejects_equal_total_with_different_tie_break_keys():
+    source = Path(CONTRACT_PATH).read_text(encoding="utf-8")
+    function = next(
+        node
+        for node in ast.parse(source).body
+        if isinstance(node, ast.FunctionDef) and node.name == "_evaluation_matches"
+    )
+    namespace = {"Any": object}
+    exec(compile(ast.Module(body=[function], type_ignores=[]), CONTRACT_PATH, "exec"), namespace)
+    matches = namespace["_evaluation_matches"]
+    common = {
+        "outcome": "SCORED",
+        "canonical_subject_key": "amoxicillin",
+        "source_provenance": "snapshot",
+        "disclaimer_version": "v1",
+        "total_score": 10,
+        "reason_codes": ["SUBSTANTIAL_EVIDENCE_GAP"],
+    }
+    leader = {**common, "relevance": 4, "evidence_gap": 4, "urgency_signal": 1, "feasibility": 1}
+    validator = {**common, "relevance": 2, "evidence_gap": 2, "urgency_signal": 3, "feasibility": 3}
+    assert matches(leader, validator) is False
+
+    same_ranking = {**validator, "evidence_gap": 4, "urgency_signal": 1}
+    assert matches(leader, same_ranking) is True
 
 
 def create_standard_round(

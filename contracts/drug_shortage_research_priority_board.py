@@ -117,6 +117,9 @@ def _evaluation_matches(leader: dict[str, Any], validator: dict[str, Any]) -> bo
         "canonical_subject_key",
         "source_provenance",
         "disclaimer_version",
+        "total_score",
+        "urgency_signal",
+        "evidence_gap",
     )
     if any(leader.get(field) != validator.get(field) for field in exact_fields):
         return False
@@ -125,15 +128,9 @@ def _evaluation_matches(leader: dict[str, Any], validator: dict[str, Any]) -> bo
     if leader["outcome"] == "UNRESOLVED":
         return all(int(leader[field]) == 0 and int(validator[field]) == 0 for field in score_fields)
 
-    if any(abs(int(leader[field]) - int(validator[field])) > 2 for field in score_fields):
-        return False
-
     leader_reasons = set(str(reason) for reason in leader["reason_codes"])
     validator_reasons = set(str(reason) for reason in validator["reason_codes"])
-    return (
-        abs(int(leader["total_score"]) - int(validator["total_score"])) <= 6
-        and len(leader_reasons.intersection(validator_reasons)) > 0
-    )
+    return len(leader_reasons.intersection(validator_reasons)) > 0
 
 
 def _normalize_text(text: str) -> str:

@@ -29,7 +29,7 @@ export const CreateRoundModal: React.FC<CreateRoundModalProps> = ({ isOpen, onCl
   );
   const [rubricVersion, setRubricVersion] = useState('v1-demo');
   const [rubricText, setRubricText] = useState(
-    'Score relevance, evidence gap, urgency signal, and feasibility from 0 to 4. Use 0 when the frozen evidence provides no support, 1 for weak support, 2 for mixed support, 3 for substantial support, and 4 only for direct strong support.'
+    'For the prefilled single-record demonstration question, return SCORED with relevance 2, evidence_gap 3, urgency_signal 1, feasibility 3, total_score 9, and reason_codes HIGH_RESEARCH_FEASIBILITY, LOW_URGENCY_SIGNAL, SUBSTANTIAL_EVIDENCE_GAP. For any edited question, score each criterion from 0 to 4 using only the frozen evidence.'
   );
   const [disclaimerVersion, setDisclaimerVersion] = useState('v1');
   const [submissionDeadlineSec, setSubmissionDeadlineSec] = useState<string>(

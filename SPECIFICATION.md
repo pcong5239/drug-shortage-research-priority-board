@@ -53,7 +53,7 @@ For every locked submission, validators independently derive stable integer scor
 - `urgency_signal`
 - `feasibility`
 
-They also return a bounded reason-code set and a short rationale. The normalized consequential fields are `outcome`, the four scores, total score, canonical subject key, and reason codes. Schema checks alone are insufficient: validator logic must independently rerun the same evidence fetch and evaluation and compare the consequential outcome region. For `SCORED`, the region requires the same outcome and provenance, each criterion within two points, total within six points, and at least one shared allowlisted reason code; for `UNRESOLVED`, both results must preserve zero scores. Free-form rationale is not compared byte-for-byte.
+They also return a bounded reason-code set and a short rationale. The normalized consequential fields are `outcome`, the four scores, total score, canonical subject key, and reason codes. Schema checks alone are insufficient: validator logic must independently rerun the same evidence fetch and evaluation and compare the consequential outcome region. For `SCORED`, the region requires the same outcome, provenance, and exact allocation-ranking keys (`total_score`, `urgency_signal`, and `evidence_gap`) plus at least one shared allowlisted reason code; for `UNRESOLVED`, both results must preserve zero scores. Free-form rationale is not compared byte-for-byte.
 
 Allowed outcomes: `SCORED` or `UNRESOLVED`. Scores cannot encode treatment recommendations, drug substitution, individual clinical urgency, patient severity, procurement priority, or distribution priority.
 

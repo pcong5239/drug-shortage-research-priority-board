@@ -1,6 +1,6 @@
 # Verification
 
-> Replacement release candidate pending PRE_DEPLOY approval. Candidate contract SHA-256: `354ee78c1a338affeea0f5ac5ed4f37e915e0197f375e9c496ded4243d7c0296`. The deployment and transactions below belong to the superseded diagnostic revision and are retained only as historical evidence; they do not prove the candidate.
+> Replacement release candidate pending PRE_DEPLOY approval. Candidate contract SHA-256: `40d65955e75a15741a8f27a79fcc60b9b6256c6055f33dc5b4c978ee2412561c`. The deployment and transactions below belong to the superseded diagnostic revision and are retained only as historical evidence; they do not prove the candidate.
 
 ## Release identity
 
