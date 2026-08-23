@@ -87,6 +87,9 @@ describe('Contract Boundary & Data Parsing (Scenarios 27–38)', () => {
     const mockProvider = {
       request: vi.fn().mockRejectedValue({ code: 4001, message: 'User rejected transaction' }),
     };
+    vi.spyOn(clientService, 'createWalletBoundClient').mockReturnValue({
+      writeContract: vi.fn().mockRejectedValue({ code: 4001, message: 'User rejected transaction' }),
+    } as any);
 
     const outcome = await executeContractWrite({
       contractAddress: '0x1111111111111111111111111111111111111111',

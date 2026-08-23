@@ -110,6 +110,32 @@ def _canonical_json(data: Any) -> str:
     return json.dumps(data, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
+def _evaluation_matches(leader: dict[str, Any], validator: dict[str, Any]) -> bool:
+    """Accept the same bounded decision without requiring identical LLM wording."""
+    exact_fields = (
+        "outcome",
+        "canonical_subject_key",
+        "source_provenance",
+        "disclaimer_version",
+    )
+    if any(leader.get(field) != validator.get(field) for field in exact_fields):
+        return False
+
+    score_fields = ("relevance", "evidence_gap", "urgency_signal", "feasibility")
+    if leader["outcome"] == "UNRESOLVED":
+        return all(int(leader[field]) == 0 and int(validator[field]) == 0 for field in score_fields)
+
+    if any(abs(int(leader[field]) - int(validator[field])) > 2 for field in score_fields):
+        return False
+
+    leader_reasons = set(str(reason) for reason in leader["reason_codes"])
+    validator_reasons = set(str(reason) for reason in validator["reason_codes"])
+    return (
+        abs(int(leader["total_score"]) - int(validator["total_score"])) <= 6
+        and len(leader_reasons.intersection(validator_reasons)) > 0
+    )
+
+
 def _normalize_text(text: str) -> str:
     cleaned = re.sub(r"\s+", " ", text.strip().lower())
     return cleaned
@@ -847,19 +873,7 @@ class DrugShortageResearchPriorityBoard(gl.Contract):
             except Exception:
                 return False
 
-            consequential_fields = (
-                "outcome",
-                "relevance",
-                "evidence_gap",
-                "urgency_signal",
-                "feasibility",
-                "total_score",
-                "canonical_subject_key",
-                "reason_codes",
-                "source_provenance",
-                "disclaimer_version",
-            )
-            return all(leader.get(f) == validator.get(f) for f in consequential_fields)
+            return _evaluation_matches(leader, validator)
 
         agreed_raw: Any = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)
         if isinstance(agreed_raw, str):
@@ -1114,6 +1128,8 @@ class DrugShortageResearchPriorityBoard(gl.Contract):
         submitted_ids: list[int] = []
         reviewer_assigned_ids: list[int] = []
         claimable_ids: list[int] = []
+        has_unacknowledged_allocation = False
+        has_expired_allocation = False
 
         for sid in range(1, sub_count + 1):
             sub = self._load_submission(round_id, sid)
@@ -1123,6 +1139,10 @@ class DrugShortageResearchPriorityBoard(gl.Contract):
                 reviewer_assigned_ids.append(sid)
                 if sub["status"] == STATUS_ALLOCATED and current_time <= sub["claim_deadline"]:
                     claimable_ids.append(sid)
+            if sub["status"] == STATUS_ALLOCATED:
+                has_unacknowledged_allocation = True
+                if current_time > sub["claim_deadline"]:
+                    has_expired_allocation = True
 
         can_lock = False
         if round_data["state"] == STATE_OPEN:
@@ -1132,8 +1152,13 @@ class DrugShortageResearchPriorityBoard(gl.Contract):
                 can_lock = True
 
         can_allocate = round_data["state"] == STATE_EVALUATED
-        can_reclaim = round_data["state"] == STATE_CLAIM
-        can_finalize = round_data["state"] in (STATE_CLAIM, STATE_ALLOCATED, STATE_EVALUATED)
+        can_reclaim = round_data["state"] == STATE_CLAIM and has_expired_allocation
+        can_finalize = (
+            round_data["state"] in (STATE_CLAIM, STATE_ALLOCATED)
+            and not has_unacknowledged_allocation
+        ) or (
+            round_data["state"] == STATE_EVALUATED and sub_count == 0
+        )
 
         return _canonical_json({
             "round_id": int(round_id),

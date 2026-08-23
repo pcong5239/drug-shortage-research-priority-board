@@ -1,0 +1,1 @@
+{"captured_at":"2026-08-23","source":"https://api.fda.gov/drug/drugsfda.json?limit=1","source_name":"openFDA Drugs@FDA","records":[{"application_number":"ANDA078367","sponsor_name":"MSN","products":[{"brand_name":"DESLORATADINE","dosage_form":"TABLET;ORAL","marketing_status":"Prescription","route":"ORAL","strength":"5MG"}]}]}

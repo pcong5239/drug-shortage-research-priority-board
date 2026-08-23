@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import { useContract } from '../hooks/useContract';
 import { StatusBadge } from './StatusBadge';
 import { CreateRoundModal } from './CreateRoundModal';
+import { useWallet } from '../hooks/useWallet';
 
 export const RoundContextRail: React.FC = () => {
+  const { connectedAccount, isCorrectChain } = useWallet();
   const {
     roundCount,
     selectedRoundId,
@@ -60,7 +62,8 @@ export const RoundContextRail: React.FC = () => {
             type="button"
             className="btn btn-secondary btn-sm"
             onClick={() => setIsCreateModalOpen(true)}
-            disabled={!isContractConfigured}
+            disabled={!isContractConfigured || !connectedAccount || !isCorrectChain}
+            title={connectedAccount && isCorrectChain ? 'Create a new research priority round' : 'Connect a wallet on Studionet to create a round'}
             data-testid="create-round-trigger"
           >
             + New Round

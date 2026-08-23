@@ -48,7 +48,7 @@ export const MainWorkbench: React.FC = () => {
           <div className="banner-state-icon" aria-hidden="true">⚠️</div>
           <h2>Unable to Load Studionet State</h2>
           <p>{error}</p>
-          <button type="button" className="btn btn-primary" onClick={refreshData} disabled={isLoading}>
+          <button type="button" className="btn btn-primary" onClick={() => refreshData()} disabled={isLoading}>
             {isLoading ? 'Retrying…' : 'Retry On-chain Readback'}
           </button>
         </div>
@@ -68,7 +68,7 @@ export const MainWorkbench: React.FC = () => {
     );
   }
 
-  const isWriting = txState.stage === 'SIGNING' || txState.stage === 'SUBMITTED';
+  const isWriting = !['IDLE', 'ERROR', 'READBACK_CONFIRMED'].includes(txState.stage);
 
   // Stage checks
   const isOpen = currentRound.state === 'OPEN';
@@ -91,6 +91,15 @@ export const MainWorkbench: React.FC = () => {
   return (
     <main className="main-workbench" role="main">
       <TransactionLiveRegion />
+
+      {error && (
+        <div className="tx-error-box" role="alert">
+          <span>{error}</span>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={() => refreshData()} disabled={isLoading}>
+            {isLoading ? 'Retrying…' : 'Retry On-chain Readback'}
+          </button>
+        </div>
+      )}
 
       {/* Judge & Trust Model Explainer Card */}
       <section className="trust-model-banner" aria-label="GenLayer Trust & Consensus Model">
@@ -214,7 +223,7 @@ export const MainWorkbench: React.FC = () => {
                   type="button"
                   className="btn btn-secondary"
                   onClick={() => reclaimExpiredSlots(currentRound.round_id)}
-                  disabled={!isCorrectChain || !connectedAccount || isWriting}
+                  disabled={!isCorrectChain || !connectedAccount || !callerStatus?.can_reclaim || isWriting}
                   title="Reclaim unacknowledged slots whose claim deadline has passed"
                 >
                   Reclaim Expired Slots
@@ -224,7 +233,7 @@ export const MainWorkbench: React.FC = () => {
                   type="button"
                   className="btn btn-primary"
                   onClick={() => finalizeRound(currentRound.round_id)}
-                  disabled={!isCorrectChain || !connectedAccount || isWriting}
+                  disabled={!isCorrectChain || !connectedAccount || !callerStatus?.can_finalize || isWriting}
                   title="Finalize round when all slots are acknowledged or waitlist is exhausted"
                 >
                   Finalize Round

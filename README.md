@@ -21,6 +21,8 @@ Evidence fetch, digest, freshness, schema, or consensus failures become retry-sa
 
 ## Studionet deployment
 
+The address below is the superseded diagnostic deployment. A corrected release candidate with contract SHA-256 `354ee78c1a338affeea0f5ac5ed4f37e915e0197f375e9c496ded4243d7c0296` is awaiting governed PRE_DEPLOY review and a fresh Studionet deployment. Do not treat the prior address as the final candidate.
+
 - Network: GenLayer Studionet (`61999`)
 - Contract: [`0x26C0413ED148085A8187D5dC47CEA06Ea4931A6A`](https://explorer-studio.genlayer.com/address/0x26C0413ED148085A8187D5dC47CEA06Ea4931A6A)
 - Deployment transaction: [`0x4999f6bc…8e193`](https://explorer-studio.genlayer.com/tx/0x4999f6bc8972e695e3c0f241aeea7bd489f867807200b293f1bc1b9bd788e193)

@@ -107,6 +107,14 @@ def test_live_prompt_enumerates_every_allowed_reason_code():
     assert "sorted(list(VALID_REASON_CODES))" in prompt_slice
 
 
+def test_consensus_uses_bounded_score_equivalence_not_exact_llm_text():
+    source = Path(CONTRACT_PATH).read_text(encoding="utf-8")
+    assert "return _evaluation_matches(leader, validator)" in source
+    assert 'abs(int(leader[field]) - int(validator[field])) > 2' in source
+    assert 'abs(int(leader["total_score"]) - int(validator["total_score"])) <= 6' in source
+    assert "leader_reasons.intersection(validator_reasons)" in source
+
+
 def create_standard_round(
     contract,
     slot_count=2,
@@ -247,6 +255,10 @@ def test_01_full_happy_path_to_final(direct_vm, direct_deploy):
     assert sub2["status"] == "ALLOCATED"
     assert sub3["status"] == "WAITLISTED"
 
+    status_before_ack = json.loads(contract.get_caller_status(round_id, ALICE))
+    assert status_before_ack["can_reclaim"] is False
+    assert status_before_ack["can_finalize"] is False
+
     # 6. Reviewers acknowledge their allocated slots
     direct_vm.sender = ALICE
     contract.acknowledge_slot(round_id, 1)
@@ -258,6 +270,10 @@ def test_01_full_happy_path_to_final(direct_vm, direct_deploy):
     contract.acknowledge_slot(round_id, 2)
     sub2_ack = json.loads(contract.get_submission(round_id, 2))
     assert sub2_ack["status"] == "ACKNOWLEDGED"
+
+    status_after_ack = json.loads(contract.get_caller_status(round_id, CHARLIE))
+    assert status_after_ack["can_reclaim"] is False
+    assert status_after_ack["can_finalize"] is True
 
     # 7. Finalize round
     direct_vm.sender = CHARLIE

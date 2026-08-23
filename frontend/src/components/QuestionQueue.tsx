@@ -61,7 +61,7 @@ export const QuestionQueue: React.FC = () => {
     });
   }
 
-  const isWriting = txState.stage === 'SIGNING' || txState.stage === 'SUBMITTED';
+  const isWriting = !['IDLE', 'ERROR', 'READBACK_CONFIRMED'].includes(txState.stage);
 
   return (
     <div className="queue-container">

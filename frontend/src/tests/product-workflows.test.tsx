@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { AppContent } from '../App';
 import { WalletProvider } from '../context/WalletContext';
@@ -98,6 +100,7 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
     });
 
     expect(await screen.findByText(/No Research Priority Round Selected/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /New Round/i })).toBeDisabled();
   });
 
   it('Scenario 40b: shows an explicit retry when the Studionet readback fails', async () => {
@@ -178,6 +181,28 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
 
     const submitBtn = screen.getByRole('button', { name: /Create Round on Studionet/i });
     expect(submitBtn).toBeInTheDocument();
+  });
+
+  it('prefills the public demo snapshot with its matching digest', async () => {
+    await act(async () => {
+      render(
+        <WalletProvider>
+          <ContractProvider contractAddressOverride="0x1111111111111111111111111111111111111111">
+            <CreateRoundModal isOpen={true} onClose={vi.fn()} />
+          </ContractProvider>
+        </WalletProvider>
+      );
+    });
+
+    expect(screen.getByLabelText(/Snapshot HTTPS URI/i)).toHaveValue(
+      'https://drug-shortage-research-priority-boa.vercel.app/openfda-demo-snapshot.json'
+    );
+    expect(screen.getByLabelText(/Snapshot SHA-256 Digest/i)).toHaveValue(
+      'ab4749c2c0a05e0f789a1a121fe1ee6d62fb9c0ed62575dec15bac04c3d176d4'
+    );
+    expect(
+      createHash('sha256').update(readFileSync('public/openfda-demo-snapshot.json')).digest('hex')
+    ).toBe('ab4749c2c0a05e0f789a1a121fe1ee6d62fb9c0ed62575dec15bac04c3d176d4');
   });
 
   // Scenario 43: Submit question modal client-side validation

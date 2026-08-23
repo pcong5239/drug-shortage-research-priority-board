@@ -14,23 +14,24 @@ export const CreateRoundModal: React.FC<CreateRoundModalProps> = ({ isOpen, onCl
   const { createRound, txState } = useContract();
 
   const nowSec = Math.floor(Date.now() / 1000);
+  const todayUtc = new Date().toISOString().slice(0, 10);
 
   const [snapshotUri, setSnapshotUri] = useState(
-    'https://api.fda.gov/download/drug_shortages_snapshot_20260801.json'
+    'https://drug-shortage-research-priority-boa.vercel.app/openfda-demo-snapshot.json'
   );
   const [snapshotSha256, setSnapshotSha256] = useState(
-    'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+    'ab4749c2c0a05e0f789a1a121fe1ee6d62fb9c0ed62575dec15bac04c3d176d4'
   );
   const [capturedAt, setCapturedAt] = useState<string>(String(nowSec));
-  const [datasetLastUpdated, setDatasetLastUpdated] = useState('2026-08-01');
+  const [datasetLastUpdated, setDatasetLastUpdated] = useState(todayUtc);
   const [subsetDescription, setSubsetDescription] = useState(
-    'openFDA essential anti-infective and oncology shortages cohort'
+    'Single-record openFDA public research demonstration cohort'
   );
-  const [rubricVersion, setRubricVersion] = useState('v1.0');
+  const [rubricVersion, setRubricVersion] = useState('v1-demo');
   const [rubricText, setRubricText] = useState(
-    'Evaluate research gap, relevance to shortages, urgency signal, and public feasibility (0-4 integer scale).'
+    'Score relevance, evidence gap, urgency signal, and feasibility from 0 to 4. Use 0 when the frozen evidence provides no support, 1 for weak support, 2 for mixed support, 3 for substantial support, and 4 only for direct strong support.'
   );
-  const [disclaimerVersion, setDisclaimerVersion] = useState('v1.0');
+  const [disclaimerVersion, setDisclaimerVersion] = useState('v1');
   const [submissionDeadlineSec, setSubmissionDeadlineSec] = useState<string>(
     String(nowSec + 86400 * 3)
   );

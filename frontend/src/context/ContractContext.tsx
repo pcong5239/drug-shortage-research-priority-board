@@ -42,7 +42,7 @@ export interface ContractContextValue {
   setSelectedSubmissionId: (id: number | null) => void;
   isLoading: boolean;
   error: string | null;
-  refreshData: () => Promise<void>;
+  refreshData: (preferredRoundId?: number) => Promise<void>;
   txState: TransactionState;
   resetTxState: () => void;
 
@@ -121,7 +121,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
     setTxState(INITIAL_TX_STATE);
   }, []);
 
-  const refreshData = useCallback(async () => {
+  const refreshData = useCallback(async (preferredRoundId?: number) => {
     if (!contractAddress) return;
 
     // A write may finish while the mount/account refresh is still running.
@@ -143,7 +143,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       setRoundCount(count);
 
       // Determine active round
-      let activeRoundId = selectedRoundId;
+      let activeRoundId = preferredRoundId ?? selectedRoundId;
       if (activeRoundId === null && count > 0) {
         activeRoundId = count; // Default to latest round
         skipNextSelectionRefreshRef.current = true;
@@ -301,7 +301,14 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       });
 
       if (res.success) {
-        await refreshData();
+        const createdRoundId = res.returnedId === null ? null : Number(res.returnedId);
+        if (createdRoundId !== null) {
+          skipNextSelectionRefreshRef.current = true;
+          setSelectedRoundId(createdRoundId);
+          await refreshData(createdRoundId);
+        } else {
+          await refreshData();
+        }
       }
 
       return {

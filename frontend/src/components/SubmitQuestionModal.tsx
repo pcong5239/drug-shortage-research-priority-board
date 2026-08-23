@@ -23,13 +23,13 @@ export const SubmitQuestionModal: React.FC<SubmitQuestionModalProps> = ({
   const { connectedAccount } = useWallet();
 
   const [questionText, setQuestionText] = useState(
-    'What are alternative formulation options for pediatric amoxicillin shortages?'
+    'Which evidence gaps in this frozen FDA record should public researchers investigate before drawing medicine-access conclusions?'
   );
   const [canonicalSubjectKey, setCanonicalSubjectKey] = useState(
-    'amoxicillin-pediatric-suspension'
+    'frozen-fda-record-evidence-gap'
   );
   const [evidenceUrls, setEvidenceUrls] = useState<string[]>([
-    'https://pubmed.ncbi.nlm.nih.gov/38901234/',
+    'https://drug-shortage-research-priority-boa.vercel.app/openfda-demo-snapshot.json',
   ]);
   const [reviewerAddress, setReviewerAddress] = useState<string>('');
 

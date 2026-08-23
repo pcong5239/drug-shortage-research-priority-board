@@ -1,5 +1,7 @@
 # Verification
 
+> Replacement release candidate pending PRE_DEPLOY approval. Candidate contract SHA-256: `354ee78c1a338affeea0f5ac5ed4f37e915e0197f375e9c496ded4243d7c0296`. The deployment and transactions below belong to the superseded diagnostic revision and are retained only as historical evidence; they do not prove the candidate.
+
 ## Release identity
 
 - Reviewed contract commit: `70c277d14e8cebfc6a5b6dd58ed313c44f84a772`
@@ -26,11 +28,11 @@ Studionet `gen_getContractCode` returned 46,881 bytes whose SHA-256 equals the r
 
 | Check | Command | Result |
 |---|---|---|
-| Direct contract suite | `.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider` | 31 passed |
+| Direct contract suite | `.\.venv\Scripts\python.exe -m pytest -q -p no:cacheprovider` | 32 passed |
 | GenVM lint/validation | `genvm-lint check contracts\drug_shortage_research_priority_board.py` | 3 checks passed; 19 methods validated |
 | GenVM schema | `genvm-lint schema contracts\drug_shortage_research_priority_board.py` | passed |
 | GenVM typecheck | `genvm-lint typecheck contracts\drug_shortage_research_priority_board.py` | no type errors |
-| Frontend suite | `pnpm test -- --run` | 63 passed |
+| Frontend suite | `npm test -- --run` | 66 passed |
 | Frontend typecheck | `pnpm run typecheck` | passed |
 | Production build | `pnpm run build` with the contract address | passed |
 
@@ -44,6 +46,6 @@ The governed 43-row Studio ledger covers deployment, recovery, expected rollback
 
 Every positive case required `FINALIZED`, successful execution, accepted consensus where applicable, and authoritative readback. Failed and `Undetermined` diagnostic attempts are retained in the internal evidence ledger but are not counted as passes.
 
-## Remaining user-owned gate
+## Remaining release gates
 
-The compiled production configuration and primary-AI live checks are verified before handoff. The user-executed external-wallet E2E transactions and final anonymous review remain mandatory. Until those pass against this exact release, this project is not claimed complete.
+The replacement candidate still requires anonymous PRE_DEPLOY approval, a new Studionet deployment, complete live Studio verification, updated frontend address, production deployment, user-signature OKX E2E, and final anonymous review. Until those pass against one exact revision, this project is not claimed complete.
