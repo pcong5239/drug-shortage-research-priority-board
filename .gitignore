@@ -15,3 +15,5 @@ __pycache__/
 /AGENTS.md
 /CLAUDE.md
 /SPECIFICATION.md
+/DESIGN.md
+/.hallmark/
