@@ -29,7 +29,7 @@ After the authorized upgrade, `gen_getContractCode` returned 47,874 bytes with t
 | Direct contract suite | 33 passed |
 | GenVM lint/validation | 3 checks passed; 19 methods validated |
 | GenVM schema/typecheck | passed; no type errors |
-| Frontend suite | 72 passed |
+| Frontend suite | 73 passed |
 | Frontend typecheck/build | passed |
 
 ## Studionet RPC budget
@@ -39,7 +39,7 @@ After the authorized upgrade, `gen_getContractCode` returned 47,874 bytes with t
 - Identical concurrent reads share one in-flight request. Same-key React refresh effects coalesce; a different account/round/contract key aborts the obsolete refresh and starts exactly one replacement. A successful write performs one deliberate reconciliation after its authoritative method-specific readback.
 - Transient `429`, `-32029`, rate-limit, and server-busy reads retry at most three attempts with exponential backoff and jitter. Cancellation is checked before submission and before every retry.
 - Transaction submission executes once per wallet authorization. Receipt polling is deadline-bounded with increasing delay; timeout preserves the transaction hash and never replays the write. Success still requires `FINALIZED`, execution `SUCCESS`, and authoritative readback with bounded backoff.
-- Regression evidence covers concurrent-read deduplication, a same-state rerender with zero extra calls, an aborted different-key refresh followed by exactly one replacement, pre-submit and mid-retry cancellation, bounded 429 attempts, preserved hash on timeout, delayed readback without duplicate write, and the full wallet/provider suite. Wallet tests independently cover account removal/change, chain switch/change, listener cleanup, and fresh disconnected reload behavior.
+- Regression evidence covers concurrent-read deduplication, a same-state rerender with zero extra calls, an aborted different-key refresh followed by exactly one replacement, normalized Studionet return-envelope decoding, pre-submit and mid-retry cancellation, bounded 429 attempts, preserved hash on timeout, delayed readback without duplicate write, and the full wallet/provider suite. Wallet tests independently cover account removal/change, chain switch/change, listener cleanup, and fresh disconnected reload behavior.
 
 ## Exact Live Studio attempt ledger
 

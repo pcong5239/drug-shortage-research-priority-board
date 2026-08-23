@@ -73,7 +73,7 @@ pnpm --dir frontend run typecheck
 pnpm --dir frontend run build
 ```
 
-Current result: 33 contract tests and 72 frontend tests pass; lint, schema, typecheck, production build, diff check, and secret scan pass. The full live transaction matrix is in [docs/VERIFICATION.md](docs/VERIFICATION.md).
+Current result: 33 contract tests and 73 frontend tests pass; lint, schema, typecheck, production build, diff check, and secret scan pass. The full live transaction matrix is in [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 ## Deployment
 

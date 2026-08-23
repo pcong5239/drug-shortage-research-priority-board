@@ -7,7 +7,7 @@ import {
   toSafeInteger,
   toSafeBigInt,
 } from '../services/validation';
-import { classifyReceipt, executeContractWrite, fetchRoundCount, normalizeContractAddress } from '../services/contract';
+import { classifyReceipt, decodeReturnedId, executeContractWrite, fetchRoundCount, normalizeContractAddress } from '../services/contract';
 import * as clientService from '../services/client';
 
 const encodeReturn = (value: bigint): `0x${string}` =>
@@ -330,6 +330,14 @@ describe('Contract Boundary & Data Parsing (Scenarios 27–38)', () => {
     });
 
     expect(outcome.returnedId).toBe(5n);
+  });
+
+  it('decodes the normalized GenLayer return envelope captured from Studionet', () => {
+    expect(decodeReturnedId({
+      raw: 'ACE=',
+      status: 'return',
+      payload: { raw: [33], readable: '4' },
+    })).toBe(4n);
   });
 
   // Scenario 38: Write returns new submission ID

@@ -380,7 +380,18 @@ function hexToBytes(value: string): Uint8Array {
 export function decodeReturnedId(value: unknown): bigint | null {
   let decoded: unknown;
   try {
-    decoded = typeof value === 'string' ? abi.calldata.decode(hexToBytes(value)) : value;
+    if (value && typeof value === 'object' && 'payload' in value) {
+      const payload = (value as { payload?: { readable?: unknown; raw?: unknown } }).payload;
+      if (typeof payload?.readable === 'string' && /^\d+$/.test(payload.readable)) {
+        decoded = BigInt(payload.readable);
+      } else if (Array.isArray(payload?.raw)) {
+        decoded = abi.calldata.decode(Uint8Array.from(payload.raw));
+      } else {
+        return null;
+      }
+    } else {
+      decoded = typeof value === 'string' ? abi.calldata.decode(hexToBytes(value)) : value;
+    }
   } catch {
     return null;
   }
