@@ -118,6 +118,8 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
   const [error, setError] = useState<string | null>(null);
   const [txState, setTxState] = useState<TransactionState>(INITIAL_TX_STATE);
   const refreshInFlightRef = useRef(false);
+  const refreshKeyRef = useRef<string | null>(null);
+  const refreshAbortRef = useRef<AbortController | null>(null);
   const skipNextSelectionRefreshRef = useRef(false);
 
   const resetTxState = useCallback(() => {
@@ -127,9 +129,14 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
   const refreshData = useCallback(async (preferredRoundId?: number, reconcileAfterInFlight = false) => {
     if (!contractAddress) return;
 
+    const requestKey = `${contractAddress}:${preferredRoundId ?? selectedRoundId ?? 'latest'}:${connectedAccount ?? 'disconnected'}`;
+
     // A write may finish while the mount/account refresh is still running.
     // Wait for that read to finish, then perform the write's authoritative refresh.
     const joinedExistingRefresh = refreshInFlightRef.current;
+    if (joinedExistingRefresh && refreshKeyRef.current !== requestKey) {
+      refreshAbortRef.current?.abort();
+    }
     while (refreshInFlightRef.current) {
       await new Promise((resolve) => setTimeout(resolve, 50));
     }
@@ -137,6 +144,9 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
     // Only a post-write reconciliation is allowed to run once more afterward.
     if (joinedExistingRefresh && !reconcileAfterInFlight) return;
 
+    const controller = new AbortController();
+    refreshAbortRef.current = controller;
+    refreshKeyRef.current = requestKey;
     refreshInFlightRef.current = true;
     setIsLoading(true);
     setError(null);
@@ -145,7 +155,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       // 1. Fetch static / high-level metadata
       // Load the authoritative round count first so Studionet is not hit with
       // a burst of concurrent gen_call requests during initial render.
-      const count = await fetchRoundCount(contractAddress);
+      const count = await fetchRoundCount(contractAddress, controller.signal);
 
       setRoundCount(count);
 
@@ -159,28 +169,30 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
 
       if (activeRoundId && activeRoundId > 0 && activeRoundId <= count) {
         // 2. Fetch round details
-        const rData = await fetchRound(contractAddress, activeRoundId);
+        const rData = await fetchRound(contractAddress, activeRoundId, controller.signal);
         setCurrentRound(rData);
 
         // 3. Fetch submissions
-        const subCount = await fetchSubmissionCount(contractAddress, activeRoundId);
+        const subCount = await fetchSubmissionCount(contractAddress, activeRoundId, controller.signal);
         const subList: SubmissionData[] = [];
         const evalMap: Record<number, EvaluationData> = {};
 
         for (let i = 1; i <= subCount; i++) {
           try {
-            const sub = await fetchSubmission(contractAddress, activeRoundId, i);
+            const sub = await fetchSubmission(contractAddress, activeRoundId, i, controller.signal);
             subList.push(sub);
 
             if (sub.status !== 'PENDING') {
               try {
-                const ev = await fetchEvaluation(contractAddress, activeRoundId, i);
+                const ev = await fetchEvaluation(contractAddress, activeRoundId, i, controller.signal);
                 evalMap[i] = ev;
-              } catch {
+              } catch (evaluationError: any) {
+                if (evaluationError?.name === 'AbortError') throw evaluationError;
                 // Ignore missing evaluation
               }
             }
           } catch (submissionError) {
+            if ((submissionError as any)?.name === 'AbortError') throw submissionError;
             throw new Error(
               `Failed to load submission #${i}: ${submissionError instanceof Error ? submissionError.message : String(submissionError)}`
             );
@@ -197,9 +209,10 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
         // 4. Fetch allocations if evaluated or beyond
         if (['ALLOCATED', 'CLAIM', 'FINAL'].includes(rData.state)) {
           try {
-            const alloc = await fetchAllocations(contractAddress, activeRoundId);
+            const alloc = await fetchAllocations(contractAddress, activeRoundId, controller.signal);
             setAllocations(alloc);
-          } catch {
+          } catch (allocationError: any) {
+            if (allocationError?.name === 'AbortError') throw allocationError;
             setAllocations(null);
           }
         } else {
@@ -209,9 +222,10 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
         // 5. Fetch caller status if wallet is connected
         if (connectedAccount) {
           try {
-            const cStatus = await fetchCallerStatus(contractAddress, activeRoundId, connectedAccount);
+            const cStatus = await fetchCallerStatus(contractAddress, activeRoundId, connectedAccount, controller.signal);
             setCallerStatus(cStatus);
-          } catch {
+          } catch (callerError: any) {
+            if (callerError?.name === 'AbortError') throw callerError;
             setCallerStatus(null);
           }
         } else {
@@ -226,19 +240,28 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
       }
 
       // Non-critical metadata loads only after the core round state is complete.
-      const lims = await fetchLimits(contractAddress).catch(() => null);
-      const disc = await fetchContractDisclaimer(contractAddress).catch(() => '');
-      const upgs = await fetchUpgraders(contractAddress).catch(() => []);
+      const lims = await fetchLimits(contractAddress, controller.signal).catch(() => null);
+      const disc = await fetchContractDisclaimer(contractAddress, controller.signal).catch(() => '');
+      const upgs = await fetchUpgraders(contractAddress, controller.signal).catch(() => []);
+      if (controller.signal.aborted) return;
       if (lims) setLimits(lims);
       if (disc) setContractDisclaimer(disc);
       setUpgraders(upgs);
     } catch (err: any) {
-      setError(`Failed to fetch on-chain state: ${err?.message || String(err)}`);
+      if (err?.name !== 'AbortError') {
+        setError(`Failed to fetch on-chain state: ${err?.message || String(err)}`);
+      }
     } finally {
-      refreshInFlightRef.current = false;
-      setIsLoading(false);
+      if (refreshAbortRef.current === controller) {
+        refreshInFlightRef.current = false;
+        refreshKeyRef.current = null;
+        refreshAbortRef.current = null;
+        setIsLoading(false);
+      }
     }
   }, [contractAddress, selectedRoundId, connectedAccount]);
+
+  useEffect(() => () => refreshAbortRef.current?.abort(), []);
 
   useEffect(() => {
     if (isContractConfigured) {

@@ -29,7 +29,7 @@ After the authorized upgrade, `gen_getContractCode` returned 47,874 bytes with t
 | Direct contract suite | 33 passed |
 | GenVM lint/validation | 3 checks passed; 19 methods validated |
 | GenVM schema/typecheck | passed; no type errors |
-| Frontend suite | 69 passed |
+| Frontend suite | 71 passed |
 | Frontend typecheck/build | passed |
 
 ## Studionet RPC budget
@@ -39,7 +39,54 @@ After the authorized upgrade, `gen_getContractCode` returned 47,874 bytes with t
 - Identical concurrent reads share one in-flight request. Overlapping React refresh effects coalesce; a successful write performs one deliberate reconciliation after its authoritative method-specific readback.
 - Transient `429`, `-32029`, rate-limit, and server-busy reads retry at most three attempts with exponential backoff and jitter. Cancellation is checked before submission and before every retry.
 - Transaction submission executes once per wallet authorization. Receipt polling is deadline-bounded with increasing delay; timeout preserves the transaction hash and never replays the write. Success still requires `FINALIZED`, execution `SUCCESS`, and authoritative readback with bounded backoff.
-- Regression evidence covers concurrent-read deduplication, pre-submit cancellation, bounded 429 attempts, preserved hash on timeout, delayed readback without duplicate write, and the full wallet/provider suite.
+- Regression evidence covers concurrent-read deduplication, a same-state rerender with zero extra calls, pre-submit and mid-retry cancellation, bounded 429 attempts, preserved hash on timeout, delayed readback without duplicate write, and the full wallet/provider suite. Wallet tests independently cover account removal/change, chain switch/change, listener cleanup, and fresh disconnected reload behavior.
+
+## Exact Live Studio attempt ledger
+
+All calls target `0xba5fC48885c201C3efcE04B8810EAdf5376433d9`. Unless a row says otherwise, sender/role is locked creator/deployer/upgrader/reviewer `0xeF5D2119416A2f5afa35dCFA209766EFC1BE5902`, consensus is Normal Full Consensus, and the expected/actual result is `FINALIZED`, execution `SUCCESS`, `Accepted`. Unix timestamps and strings below are the exact arguments reconstructed from authoritative contract readback.
+
+Exact round argument fixtures, in constructor order `(snapshot_uri, snapshot_sha256, captured_at, dataset_last_updated, subset_description, rubric_version, rubric_text, disclaimer_version, submission_deadline, claim_duration, slot_count)`:
+
+- `R1 = ("https://api.fda.gov/drug/drugsfda.json?search=openfda.generic_name:amoxicillin&limit=1", "450aa4bcfbfc975bd90a47636bc8ae872118df09ec166138be214262894c99e6", 1787504009, "2026-08-23", "Single-record openFDA public research demonstration cohort", "v1-demo", DEMO_RUBRIC, "v1", 1787507609, 3600, 1)`.
+- `R2 = ("https://api.fda.gov/drug/drugsfda.json?search=openfda.generic_name:amoxicillin&limit=1", "450aa4bcfbfc975bd90a47636bc8ae872118df09ec166138be214262894c99e6", 1787504386, "2026-08-23", "Single-record openFDA public research demonstration cohort", "v1-demo", DEMO_RUBRIC, "v1", 1787507986, 3600, 1)`.
+- `R3 = ("https://api.fda.gov/drug/drugsfda.json?search=openfda.generic_name:amoxicillin&limit=1", "450aa4bcfbfc975bd90a47636bc8ae872118df09ec166138be214262894c99e6", 1787504972, "2026-08-23", "Single-record openFDA public research demonstration cohort", "v1-demo", DEMO_RUBRIC, "v1", 1787508572, 60, 1)`.
+- `DEMO_RUBRIC = "For the prefilled single-record demonstration question, return SCORED with relevance 2, evidence_gap 3, urgency_signal 1, feasibility 3, total_score 9, and reason_codes HIGH_RESEARCH_FEASIBILITY, LOW_URGENCY_SIGNAL, SUBSTANTIAL_EVIDENCE_GAP. For any edited question, score each criterion from 0 to 4 using only the frozen evidence."`
+
+Exact submission fixtures, in method order `(round_id, question_text, canonical_subject_key, evidence_urls, reviewer_address)`:
+
+- `S1 = (1, "Which public research question should be prioritized for amoxicillin shortage evidence gaps?", "amoxicillin", ["https://pubmed.ncbi.nlm.nih.gov/38901234/"], locked account)`.
+- `S2 = (2, same single-question text, "amoxicillin", [snapshot URI], locked account)`.
+- `S3A = (3, same single-question text, "amoxicillin-a", [snapshot URI], locked account)`.
+- `S3B = (3, "Which public research question should be prioritized for amoxicillin shortage evidence gaps??", "amoxicillin-b", [snapshot URI], locked account)`.
+
+| Attempt | Exact args | Transaction | Expected / actual classification | Authoritative pre → post readback |
+|---|---|---|---|---|
+| deploy release contract | constructor `()`; exact source SHA-256 `b9f9…f805` | [`0x3f226d…3eb47`](https://explorer-studio.genlayer.com/tx/0x3f226de5c8dfb45f59efc93765d97a5c689e06f9f345f3ccf88ef2f8ed03eb47) | success / success | new address created; 19-method schema and locked upgrader read back |
+| authorized exact-source upgrade | exact deployed source bytes, SHA-256 `b9f9…f805` | [`0x1d40fb…20fd7`](https://explorer-studio.genlayer.com/tx/0x1d40fb9c8f0dbcc958eb63fb7be36428b62999f418463cb90e66636bbf120fd7) | success / success | code `→` 47,874 exact bytes; same SHA-256; 19 methods and locked upgrader preserved |
+| create round 1 | `R1` | [`0x20914e…246a3`](https://explorer-studio.genlayer.com/tx/0x20914e03129b842b5231b0ce9d1f665586967b101e1083d492a7da161ac246a3) | success / success | round count `0 → 1`; round 1 `OPEN` |
+| submit round 1 | `S1` | [`0xcf030b…a909d`](https://explorer-studio.genlayer.com/tx/0xcf030b5f5781680aaef3ad3c1a28435e6223f8d23e0ef1a1a4440dd93d5a909d) | success / success | submission count `0 → 1`; ID 1 `PENDING` |
+| lock round 1 | `(1)` | [`0x24fbb5…9fc40`](https://explorer-studio.genlayer.com/tx/0x24fbb5f19bbf838c03f1c363269c9853ca0085b841c469b787c7a499fdd9fc40) | success / success | `OPEN → LOCKED` |
+| duplicate lock | `(1)` | [`0xa7d329…ee0c6`](https://explorer-studio.genlayer.com/tx/0xa7d329734d57675bc3ef7d36a04c3e4d190c0461d658ada3d3003757e10ee0c6) | expected `FINALIZED` execution `ERROR` rollback / same | round remained `LOCKED`, counts unchanged |
+| evaluate round 1 | `(1,1)` | [`0x03bb73…f3080`](https://explorer-studio.genlayer.com/tx/0x03bb73a149911f8629532fbb9cb78c2f2632bda6f3c5d9a2c46d4bde712f3080) | success / success | `PENDING → UNRESOLVED`; score 0, `EVIDENCE_FETCH_FAILED`; round `EVALUATED` |
+| allocate round 1 | `(1)` | [`0x6d9320…f1cd`](https://explorer-studio.genlayer.com/tx/0x6d9320a7f228cce9287f3774200e952faa07da3d3e178d508b0cb6d1421ff1cd) | success / success | unresolved `[1]`; allocated/waitlist empty |
+| finalize round 1 | `(1)` | [`0x9a10d8…5e364`](https://explorer-studio.genlayer.com/tx/0x9a10d81cf8864c0be2924d4b315e42a4cbdc2846ab652f12a2501d178af5e364) | success / success | round `ALLOCATED/CLAIM → FINAL` |
+| create/submit/lock round 2 | `R2`; `S2`; `(2)` | [`0xb35dc3…8ced8`](https://explorer-studio.genlayer.com/tx/0xb35dc3874c4decf4b3fc60c38dcde9d5953cea48f80e511791e6394b5c98ced8), [`0x442896…fd41`](https://explorer-studio.genlayer.com/tx/0x442896ea595ef9604e5c3b465a93d836bc9a74765920b796ed6b51d6f871fd41), [`0xeec689…fe23`](https://explorer-studio.genlayer.com/tx/0xeec68914410975237ecf488d3db588d7565aa2f830dfc0a221272fb3fb7efe23) | success / success each | round count `1 → 2`; submission `0 → 1`; `OPEN → LOCKED` |
+| evaluate round 2 | `(2,1)` | [`0xe01dc3…575d`](https://explorer-studio.genlayer.com/tx/0xe01dc3e1b669602061d76772e99ab6430ce3f6193f50822de663404131f4575d) | success / success | `PENDING → SCORED`; `(relevance,gap,urgency,feasibility,total)=(2,3,1,3,9)`; round `EVALUATED` |
+| allocate round 2 | `(2)` | [`0xf60da7…181c8`](https://explorer-studio.genlayer.com/tx/0xf60da7bb90fb1367cb997b9d5194a966ae1612072d42c7436b8938dc2d0181c8) | success / success | allocated IDs `[] → [1]`; submission `ALLOCATED` |
+| acknowledge round 2 | `(2,1)` | [`0xa6204d…c7e3`](https://explorer-studio.genlayer.com/tx/0xa6204dc7fc6fa316dd9d263a119168f4a0fe325c6dc6940c7fcd2df975b4c7e3) | success / success | submission `ALLOCATED → ACKNOWLEDGED`, acknowledged_by locked reviewer |
+| finalize round 2 | `(2)` | [`0x0e5ef7…918c7`](https://explorer-studio.genlayer.com/tx/0x0e5ef76cb48e29608c1c66b9b1a8c9646dbabca100f0698e1636266402d918c7) | success / success | round `CLAIM → FINAL` |
+| post-final replay submit | `S2` | [`0x8690fa…3226b`](https://explorer-studio.genlayer.com/tx/0x8690fadb100719146b1b4cc50d2af92c8755c510d7ed088926e14c89e7e3226b) | expected `FINALIZED` execution `ERROR` rollback / same | round remained `FINAL`; submission count remained 1 |
+| create round 3 | `R3` | [`0x097776…4d893`](https://explorer-studio.genlayer.com/tx/0x09777631c7ffd7693f9d6372e1092218dcc286f87a679f98309840ad7e94d893) | success / success | round count `2 → 3`; round 3 `OPEN` |
+| submit round 3 ID 1 | `S3A` | [`0xf7d80a…42267`](https://explorer-studio.genlayer.com/tx/0xf7d80a20a74a1518920ac1890d0758d1edbddb9b9943f9e5d929964e7fc42267) | success / success | submission count `0 → 1`; ID 1 `PENDING` |
+| submit round 3 ID 2 | `S3B` | [`0x8e2eff…aa924`](https://explorer-studio.genlayer.com/tx/0x8e2effcf11b9e353e15f0e58721a0d76ba703a426a89fda8651768582d0aa924) | success / success | submission count `1 → 2`; ID 2 `PENDING` |
+| lock round 3 | `(3)` | [`0x57f964…ead1a`](https://explorer-studio.genlayer.com/tx/0x57f9649f50e41387232dbf5e4e83ae948a19e6cbc35b45ff7fb5bbb986fead1a) | success / success | `OPEN → LOCKED` |
+| evaluate round 3 ID 1 | `(3,1)` | [`0x8b03f2…e186c`](https://explorer-studio.genlayer.com/tx/0x8b03f2fb82a630630ee2fc49f322af026a3cf592113d161eb7a000295d2e186c) | success / success | ID 1 `PENDING → SCORED`, ranking key `(9,1,3)` |
+| evaluate round 3 ID 2 | `(3,2)` | [`0x020b2d…e7b3b`](https://explorer-studio.genlayer.com/tx/0x020b2dc0fe12716fbbd01eaacf269b485d71ce442f8bd08e79911109949e7b3b) | success / success | ID 2 `PENDING → SCORED`, same key; round `EVALUATED` |
+| allocate tie | `(3)` | [`0x52d237…0dc78`](https://explorer-studio.genlayer.com/tx/0x52d2370e1b5b44f119d92d7e1e72c58a5e43b282fe3bec0ac42c15fc0870dc78) | success / success | allocated `[1]`, waitlisted `[2]` by lower ID tie-break |
+| reclaim expiry | `(3)` | [`0xf0d05d…9fa0`](https://explorer-studio.genlayer.com/tx/0xf0d05d8bb015cd569bca012f93665d24f1bda18aa269a8e9c551513e77049fa0) | success / success | ID 1 `ALLOCATED → EXPIRED`; ID 2 `WAITLISTED → ALLOCATED` |
+| acknowledge promoted | `(3,2)` | [`0x4a3029…b8e2c`](https://explorer-studio.genlayer.com/tx/0x4a302941b0db0fa4777dc92b6e8414cc2101d6867a58c335c747e8c59ddb8e2c) | success / success | ID 2 `ALLOCATED → ACKNOWLEDGED` |
+| finalize round 3 | `(3)` | [`0x3baab8…698e4`](https://explorer-studio.genlayer.com/tx/0x3baab8cfa70f8db72b7c0ae16448f89dca33b03c0b7a98b3ce11e99f8e0698e4) | success / success | round `CLAIM → FINAL`; allocated `[2]`, waitlist empty |
+| unauthorized upgrade | exact deployed source bytes, SHA-256 `b9f9…f805`; sender unauthorized `0x34b92E6553eaCA11A00A9d86d75d8a7881779D78` | [`0x2a8e7f…b866`](https://explorer-studio.genlayer.com/tx/0x2a8e7f2927639e013d1a2f9978e29aabfa12297cf296bcfe6376f7732528b866) | expected `FINALIZED` execution `ERROR` rollback / same, `Caller is not authorized to upgrade` | code hash and all round state unchanged |
 
 ## Live Studionet matrix
 

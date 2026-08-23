@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { AppContent } from '../App';
 import { WalletProvider } from '../context/WalletContext';
 import { ContractProvider } from '../context/ContractContext';
@@ -101,6 +101,35 @@ describe('Product Workflows & Scenario Tests (Scenarios 39–50)', () => {
 
     expect(await screen.findByText(/No Research Priority Round Selected/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /New Round/i })).toBeDisabled();
+  });
+
+  it('keeps the initial zero-round RPC budget stable across a same-state rerender', async () => {
+    const readContract = vi.fn().mockImplementation(async ({ functionName }) => {
+      if (functionName === 'get_round_count') return 0;
+      if (functionName === 'get_limits') return JSON.stringify({});
+      if (functionName === 'get_contract_disclaimer') return 'Disclaimer';
+      if (functionName === 'get_upgraders') return [];
+      return null;
+    });
+    vi.spyOn(clientService, 'getPublicClient').mockReturnValue({ readContract } as any);
+
+    const tree = (
+      <WalletProvider>
+        <ContractProvider contractAddressOverride="0x1111111111111111111111111111111111111111">
+          <AppContent />
+        </ContractProvider>
+      </WalletProvider>
+    );
+    const view = render(tree);
+    expect(await screen.findByText(/No Research Priority Round Selected/i)).toBeInTheDocument();
+    await waitFor(() => expect(readContract.mock.calls.length).toBeGreaterThanOrEqual(3));
+    const initialCallCount = readContract.mock.calls.length;
+    const initialMethods = readContract.mock.calls.map(([request]) => request.functionName);
+    expect(new Set(initialMethods).size).toBe(initialMethods.length);
+
+    view.rerender(tree);
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(readContract).toHaveBeenCalledTimes(initialCallCount);
   });
 
   it('Scenario 40b: shows an explicit retry when the Studionet readback fails', async () => {

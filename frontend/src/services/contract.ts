@@ -224,7 +224,9 @@ async function readContractDeduped(request: Record<string, unknown>, signal?: Ab
     for (let attempt = 0; attempt < 3; attempt += 1) {
       if (signal?.aborted) throw abortError();
       try {
-        return await getPublicClient().readContract(request as any);
+        const result = await getPublicClient().readContract(request as any);
+        if (signal?.aborted) throw abortError();
+        return result;
       } catch (error) {
         lastError = error;
         if (!isTransientRpcError(error) || attempt === 2) throw error;
@@ -256,96 +258,99 @@ export async function fetchRoundCount(contractAddress: string, signal?: AbortSig
   return toSafeInteger(raw, 0);
 }
 
-export async function fetchRound(contractAddress: string, roundId: number | bigint): Promise<RoundData> {
+export async function fetchRound(contractAddress: string, roundId: number | bigint, signal?: AbortSignal): Promise<RoundData> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_round',
     args: [toSafeBigInt(roundId)],
-  });
+  }, signal);
   return validateRoundData(raw);
 }
 
-export async function fetchSubmissionCount(contractAddress: string, roundId: number | bigint): Promise<number> {
+export async function fetchSubmissionCount(contractAddress: string, roundId: number | bigint, signal?: AbortSignal): Promise<number> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_submission_count',
     args: [toSafeBigInt(roundId)],
-  });
+  }, signal);
   return toSafeInteger(raw, 0);
 }
 
 export async function fetchSubmission(
   contractAddress: string,
   roundId: number | bigint,
-  submissionId: number | bigint
+  submissionId: number | bigint,
+  signal?: AbortSignal
 ): Promise<SubmissionData> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_submission',
     args: [toSafeBigInt(roundId), toSafeBigInt(submissionId)],
-  });
+  }, signal);
   return validateSubmissionData(raw);
 }
 
 export async function fetchEvaluation(
   contractAddress: string,
   roundId: number | bigint,
-  submissionId: number | bigint
+  submissionId: number | bigint,
+  signal?: AbortSignal
 ): Promise<EvaluationData> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_evaluation',
     args: [toSafeBigInt(roundId), toSafeBigInt(submissionId)],
-  });
+  }, signal);
   return validateEvaluationData(raw);
 }
 
-export async function fetchAllocations(contractAddress: string, roundId: number | bigint): Promise<AllocationsData> {
+export async function fetchAllocations(contractAddress: string, roundId: number | bigint, signal?: AbortSignal): Promise<AllocationsData> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_allocations',
     args: [toSafeBigInt(roundId)],
-  });
+  }, signal);
   return validateAllocationsData(raw);
 }
 
 export async function fetchCallerStatus(
   contractAddress: string,
   roundId: number | bigint,
-  callerAddress: string
+  callerAddress: string,
+  signal?: AbortSignal
 ): Promise<CallerStatus> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_caller_status',
     args: [toSafeBigInt(roundId), callerAddress],
-  });
+  }, signal);
   return validateCallerStatus(raw);
 }
 
-export async function fetchLimits(contractAddress: string): Promise<ContractLimits> {
+export async function fetchLimits(contractAddress: string, signal?: AbortSignal): Promise<ContractLimits> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_limits',
     args: [],
-  });
+  }, signal);
   return validateContractLimits(raw);
 }
 
-export async function fetchContractDisclaimer(contractAddress: string): Promise<string> {
+export async function fetchContractDisclaimer(contractAddress: string, signal?: AbortSignal): Promise<string> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_contract_disclaimer',
     args: [],
-  });
+  }, signal);
   return typeof raw === 'string' ? raw : String(raw || '');
 }
 
-export async function fetchUpgraders(contractAddress: string): Promise<string[]> {
+export async function fetchUpgraders(contractAddress: string, signal?: AbortSignal): Promise<string[]> {
   const raw = await readContractDeduped({
     address: contractAddress as `0x${string}`,
     functionName: 'get_upgraders',
     args: [],
-  });
+  }, signal);
   if (Array.isArray(raw)) {
     return raw.map((a) => String(a).toLowerCase());
   }

@@ -403,4 +403,21 @@ describe('Studionet RPC budget regressions', () => {
     expect(readContract).toHaveBeenCalledTimes(3);
     vi.useRealTimers();
   });
+
+  it('aborts a pending 429 retry before another RPC call is submitted', async () => {
+    vi.useFakeTimers();
+    vi.spyOn(Math, 'random').mockReturnValue(0);
+    const readContract = vi.fn().mockRejectedValue(new Error('Server busy -32029'));
+    vi.spyOn(clientService, 'getPublicClient').mockReturnValue({ readContract } as any);
+    const controller = new AbortController();
+
+    const result = fetchRoundCount('0x1111111111111111111111111111111111111111', controller.signal);
+    const rejection = expect(result).rejects.toMatchObject({ name: 'AbortError' });
+    await Promise.resolve();
+    controller.abort();
+    await vi.runAllTimersAsync();
+    await rejection;
+    expect(readContract).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
 });
