@@ -2,6 +2,8 @@
 
 ## Release identity
 
+- Final public GitHub commit: `d856521a0a13df8337fd35ec158c6e2f9d8e5d23`
+- Final public GitHub tree: `8cb67136c7d8f82465feb32c054c90a42e7ec74a`
 - Reviewed contract commit: `1e759a14f54f243be64859a13926d63498616f3e`
 - Reviewed tree: `239919b008e5e258ff0f17a0093fa1df13b344ac`
 - Contract source SHA-256: `b9f9b29a6e0c1615be91c5d1add658064cfa3cfbd13cad52d9b7d4624fa9f805`
@@ -120,7 +122,7 @@ Round 3 evaluated two submissions with identical ranking keys `(total 9, urgency
 
 ### Steward correction E2E (exact production release)
 
-- Vercel deployment: `dpl_CFHG8pdBWgtDXoJB6d1dKymZvYLV`, immutable URL `https://drug-shortage-research-priority-board-k1m8dbzyq-pcong.vercel.app`, production alias `https://drug-shortage-research-priority-boa.vercel.app`, created before the fresh Round #6 E2E writes. The frontend runtime source is unchanged from the reviewed correction source; the later public revision contains ledger/scorecard documentation updates only.
+- Vercel deployment: `dpl_CFHG8pdBWgtDXoJB6d1dKymZvYLV`; public production alias: `https://drug-shortage-research-priority-boa.vercel.app`. The immutable deployment hostname is Vercel-authenticated and is intentionally omitted from judge-facing links. The deployment was created before the fresh Round #6 E2E writes. The frontend runtime source is unchanged from the reviewed correction source; the later public revision contains ledger/scorecard documentation updates only.
 - Wallet/provider: OKX Wallet, exact selected provider object, sender `0x5D598f10a428fb2039edbc3ace83351650b286e0`, Studionet chain `61999`; contract `0xba5fC48885c201C3efcE04B8810EAdf5376433d9`.
 
 | Attempt | Exact args / sender | Transaction | Expected / actual classification | Consensus | Authoritative pre → post readback |
