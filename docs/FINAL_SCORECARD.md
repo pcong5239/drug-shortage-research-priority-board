@@ -32,9 +32,9 @@ Weakness: Vercel production deployment is manual rather than Git-integrated, and
 
 ## Frontend / UX: 4/5
 
-Evidence: The live frontend targets the submitted contract and supports EIP-6963 MetaMask, OKX Wallet, and Rabby selection with exact-provider write routing and disconnected reloads. It exposes the full round lifecycle, frozen provenance, score/ranking explanations, transaction stages, hashes, finality, execution status, authoritative readback, safe retry/reconcile states, automatic form closure and state refresh, zero-submission and all-unresolved terminal readback handling, accessibility controls, and a permanent non-medical disclaimer. The production OKX Round 4 journey completed create through FINAL.
+Evidence: The live frontend targets the submitted contract and supports EIP-6963 MetaMask, OKX Wallet, and Rabby selection with exact-provider write routing and disconnected reloads. It exposes the full round lifecycle, frozen provenance, score/ranking explanations, transaction stages, hashes, finality, execution status, authoritative readback, safe retry/reconcile states, automatic form closure and state refresh, zero-submission and all-unresolved terminal readback handling, accessibility controls, and a permanent non-medical disclaimer. The production OKX Round 4 journey completed create through FINAL, and the exact correction-release Round 5 journey verified zero-submission lock and final no-allocation readback.
 
-Exact evidence: production Vercel application; `frontend/src`; 76 frontend tests; production transaction/readback ledger in `docs/VERIFICATION.md`; final reload and console inspection.
+Exact evidence: production Vercel application; `frontend/src`; 76 frontend tests; the exact correction-release transaction/readback ledger in `docs/VERIFICATION.md`; final reload and console inspection.
 
 Weakness: normal Studionet consensus can take tens of seconds, and the deliberate no-background-polling RPC budget means updates are not instant. Wallet coverage is implementation- and test-verified, while the final real-wallet journey used OKX only. These limitations prevent 5/5.
 

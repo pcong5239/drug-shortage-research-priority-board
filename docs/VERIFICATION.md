@@ -118,6 +118,16 @@ Round 3 evaluated two submissions with identical ranking keys `(total 9, urgency
 - Reclaim/promotion: [`0xf0d05d8bb015cd569bca012f93665d24f1bda18aa269a8e9c551513e77049fa0`](https://explorer-studio.genlayer.com/tx/0xf0d05d8bb015cd569bca012f93665d24f1bda18aa269a8e9c551513e77049fa0) changed ID `1` to `EXPIRED` and ID `2` to `ALLOCATED`.
 - Promoted acknowledgment/finalize: [`0x4a302941b0db0fa4777dc92b6e8414cc2101d6867a58c335c747e8c59ddb8e2c`](https://explorer-studio.genlayer.com/tx/0x4a302941b0db0fa4777dc92b6e8414cc2101d6867a58c335c747e8c59ddb8e2c), [`0x3baab8cfa70f8db72b7c0ae16448f89dca33b03c0b7a98b3ce11e99f8e0698e4`](https://explorer-studio.genlayer.com/tx/0x3baab8cfa70f8db72b7c0ae16448f89dca33b03c0b7a98b3ce11e99f8e0698e4). Final readback: round `FINAL`, active allocated ID `[2]`, no waitlist.
 
+### Steward correction E2E (exact production release)
+
+- Vercel deployment: `dpl_Dj2hCHc5VcM61eA22eXbYFnCPqG9`, immutable URL `https://drug-shortage-research-priority-board-7p3smhbhv-pcong.vercel.app`, production alias `https://drug-shortage-research-priority-boa.vercel.app`, built from commit `011ac7b900863cfbf90c2ce769fda6c1b3ec7c7f`.
+- Wallet/provider: OKX Wallet, exact selected provider object, sender `0x5D598f10a428fb2039edbc3ace83351650b286e0`, Studionet chain `61999`; contract `0xba5fC48885c201C3efcE04B8810EAdf5376433d9`.
+
+| Attempt | Exact args / sender | Transaction | Expected / actual classification | Consensus | Authoritative pre → post readback |
+|---|---|---|---|---|---|
+| lock Round 5 | `(5)` / OKX `0x5D598f10a428fb2039edbc3ace83351650b286e0` | [`0x273a4bc2da490a1e668aa50896f3d3f33b1ebc27553d34a9604c47717b6ee4a1`](https://explorer-studio.genlayer.com/tx/0x273a4bc2da490a1e668aa50896f3d3f33b1ebc27553d34a9604c47717b6ee4a1) | expected success / actual `FINALIZED`, execution `SUCCESS` | Normal Full Consensus | `OPEN`, `submission_count=0` → `EVALUATED`, `submission_count=0`; frontend `READBACK_CONFIRMED` |
+| allocate Round 5 | `(5)` / OKX `0x5D598f10a428fb2039edbc3ace83351650b286e0` | [`0x4bd0b23ffacc2f2c7089a57245045d8a4faa596774cd6fe38d168300e32a7ce4`](https://explorer-studio.genlayer.com/tx/0x4bd0b23ffacc2f2c7089a57245045d8a4faa596774cd6fe38d168300e32a7ce4) | expected success / actual `FINALIZED`, execution `SUCCESS` | Normal Full Consensus | `EVALUATED`, zero eligible submissions → `FINAL`, `allocated_submission_ids=[]`; frontend `READBACK_CONFIRMED` |
+
 ## Production Vercel E2E
 
 - Stable URL: `https://drug-shortage-research-priority-boa.vercel.app`
