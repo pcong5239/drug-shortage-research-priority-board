@@ -29,7 +29,7 @@ After the authorized upgrade, `gen_getContractCode` returned 47,874 bytes with t
 | Direct contract suite | 33 passed |
 | GenVM lint/validation | 3 checks passed; 19 methods validated |
 | GenVM schema/typecheck | passed; no type errors |
-| Frontend suite | 74 passed |
+| Frontend suite | 76 passed |
 | Frontend typecheck/build | passed |
 
 ## Studionet RPC budget
@@ -40,6 +40,10 @@ After the authorized upgrade, `gen_getContractCode` returned 47,874 bytes with t
 - Transient `429`, `-32029`, rate-limit, and server-busy reads retry at most three attempts with exponential backoff and jitter. Cancellation is checked before submission and before every retry.
 - Transaction submission executes once per wallet authorization. Receipt polling is deadline-bounded with increasing delay; timeout preserves the transaction hash and never replays the write. Success still requires `FINALIZED`, execution `SUCCESS`, and authoritative readback with bounded backoff.
 - Regression evidence covers concurrent-read deduplication, a same-state rerender with zero extra calls, an aborted different-key refresh followed by exactly one replacement, normalized Studionet return-envelope decoding, pre-submit and mid-retry cancellation, bounded 429 attempts, preserved hash on timeout, delayed readback without duplicate write, and the full wallet/provider suite. Wallet tests independently cover account removal/change, chain switch/change, listener cleanup, and fresh disconnected reload behavior.
+
+## Steward correction closure
+
+The frontend readback predicates now match both valid terminal branches exposed by the contract. `lock_round` confirms `LOCKED` for populated rounds and also confirms `EVALUATED` when the round has zero submissions. `allocate_slots` confirms `CLAIM`/`ALLOCATED` when slots exist and also confirms `FINAL` when allocation produces no eligible slots, including an all-`UNRESOLVED` cohort. Two focused regressions cover the accepted and rejected boundary states; no contract, wallet, RPC-budget, or authentication behavior was changed.
 
 ## Exact Live Studio attempt ledger
 

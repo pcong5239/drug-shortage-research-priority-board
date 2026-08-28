@@ -3,6 +3,10 @@ import { abi } from 'genlayer-js';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import React from 'react';
 import { classifyReceipt, decodeReturnedId, executeContractWrite } from '../services/contract';
+import {
+  isAllocateSlotsReadbackConfirmed,
+  isLockRoundReadbackConfirmed,
+} from '../context/ContractContext';
 import { createWalletBoundClient } from '../services/client';
 import {
   WalletProvider,
@@ -115,6 +119,22 @@ describe('Defect 1 & 2 Regressions: Real Calldata Encoding & Provider Binding', 
     });
 
     clientSpy.mockRestore();
+  });
+});
+
+describe('Steward readback regressions', () => {
+  it('accepts the valid EVALUATED zero-submission lock result only', () => {
+    expect(isLockRoundReadbackConfirmed({ state: 'EVALUATED', submission_count: 0 })).toBe(true);
+    expect(isLockRoundReadbackConfirmed({ state: 'EVALUATED', submission_count: 1 })).toBe(false);
+    expect(isLockRoundReadbackConfirmed({ state: 'LOCKED', submission_count: 1 })).toBe(true);
+    expect(isLockRoundReadbackConfirmed({ state: 'OPEN', submission_count: 0 })).toBe(false);
+  });
+
+  it('accepts FINAL as the valid no-allocation result of allocate_slots', () => {
+    expect(isAllocateSlotsReadbackConfirmed({ state: 'FINAL' })).toBe(true);
+    expect(isAllocateSlotsReadbackConfirmed({ state: 'CLAIM' })).toBe(true);
+    expect(isAllocateSlotsReadbackConfirmed({ state: 'ALLOCATED' })).toBe(true);
+    expect(isAllocateSlotsReadbackConfirmed({ state: 'EVALUATED' })).toBe(false);
   });
 });
 

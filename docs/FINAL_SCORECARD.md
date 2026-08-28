@@ -24,7 +24,7 @@ Weakness: the contract remains upgradeable by one recorded account, so operation
 
 ## Engineering: 4/5
 
-Evidence: Contract and frontend dependencies are pinned/locked; 33 contract and 74 frontend tests pass with GenVM lint/schema/typecheck, TypeScript typecheck, production build, dependency audit, secret scan, and clean exact-revision checks. Receipt classification requires finality plus execution success, normalized SDK return envelopes are decoded losslessly, readbacks are authoritative, writes are never replayed, and RPC calls are deduplicated, cancellable, retry-bounded, and polling-bounded. Public GitHub source matches the deployed contract hash.
+Evidence: Contract and frontend dependencies are pinned/locked; 33 contract and 76 frontend tests pass with GenVM lint/schema/typecheck, TypeScript typecheck, production build, dependency audit, secret scan, and clean exact-revision checks. Receipt classification requires finality plus execution success, normalized SDK return envelopes are decoded losslessly, both valid zero-submission and all-unresolved readback branches are covered, writes are never replayed, and RPC calls are deduplicated, cancellable, retry-bounded, and polling-bounded. Public GitHub source matches the deployed contract hash.
 
 Exact evidence: `pyproject.toml`, `requirements.txt`, `frontend/pnpm-lock.yaml`, `frontend/src/services/contract.ts`, `frontend/src/context/ContractContext.tsx`, all automated suites, public Git commit/tree, Vercel deployment, and `docs/VERIFICATION.md`.
 
@@ -32,9 +32,9 @@ Weakness: Vercel production deployment is manual rather than Git-integrated, and
 
 ## Frontend / UX: 4/5
 
-Evidence: The live frontend targets the submitted contract and supports EIP-6963 MetaMask, OKX Wallet, and Rabby selection with exact-provider write routing and disconnected reloads. It exposes the full round lifecycle, frozen provenance, score/ranking explanations, transaction stages, hashes, finality, execution status, authoritative readback, safe retry/reconcile states, automatic form closure and state refresh, accessibility controls, and a permanent non-medical disclaimer. The production OKX Round 4 journey completed create through FINAL.
+Evidence: The live frontend targets the submitted contract and supports EIP-6963 MetaMask, OKX Wallet, and Rabby selection with exact-provider write routing and disconnected reloads. It exposes the full round lifecycle, frozen provenance, score/ranking explanations, transaction stages, hashes, finality, execution status, authoritative readback, safe retry/reconcile states, automatic form closure and state refresh, zero-submission and all-unresolved terminal readback handling, accessibility controls, and a permanent non-medical disclaimer. The production OKX Round 4 journey completed create through FINAL.
 
-Exact evidence: production Vercel application; `frontend/src`; 74 frontend tests; production transaction/readback ledger in `docs/VERIFICATION.md`; final reload and console inspection.
+Exact evidence: production Vercel application; `frontend/src`; 76 frontend tests; production transaction/readback ledger in `docs/VERIFICATION.md`; final reload and console inspection.
 
 Weakness: normal Studionet consensus can take tens of seconds, and the deliberate no-background-polling RPC budget means updates are not instant. Wallet coverage is implementation- and test-verified, while the final real-wallet journey used OKX only. These limitations prevent 5/5.
 

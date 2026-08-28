@@ -88,6 +88,15 @@ const INITIAL_TX_STATE: TransactionState = {
   readbackStatus: null,
 };
 
+export const isLockRoundReadbackConfirmed = (
+  round: Pick<RoundData, 'state' | 'submission_count'>
+): boolean =>
+  round.state === 'LOCKED' || (round.state === 'EVALUATED' && round.submission_count === 0);
+
+export const isAllocateSlotsReadbackConfirmed = (
+  round: Pick<RoundData, 'state'>
+): boolean => ['CLAIM', 'ALLOCATED', 'FINAL'].includes(round.state);
+
 interface ContractProviderProps {
   children: React.ReactNode;
   contractAddressOverride?: string;
@@ -419,7 +428,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
         onStateChange: setTxState,
         performReadback: async () => {
           const rd = await fetchRound(contractAddress, roundId);
-          return rd.state === 'LOCKED';
+          return isLockRoundReadbackConfirmed(rd);
         },
       });
 
@@ -475,7 +484,7 @@ export const ContractProvider: React.FC<ContractProviderProps> = ({ children, co
         onStateChange: setTxState,
         performReadback: async () => {
           const rd = await fetchRound(contractAddress, roundId);
-          return rd.state === 'CLAIM' || rd.state === 'ALLOCATED';
+          return isAllocateSlotsReadbackConfirmed(rd);
         },
       });
 
